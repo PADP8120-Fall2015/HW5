@@ -89,6 +89,7 @@ img {
 <li>Matrix regression</li>
 <li>Interactions and categorical variables</li>
 <li>Transformations</li>
+<li>Maximum Likelihood</li>
 </ul>
 </div>
 <div id="problems" class="section level2">
@@ -146,6 +147,25 @@ occup &lt;-<span class="st"> </span><span class="kw">filter</span>(occup, type %
 <li><p>Discuss any potential shortcomings of this model and key future directions that you might take if you sought to better understand LA housing prices.</p></li>
 </ol>
 </div>
+</div>
+<div id="problem-4." class="section level3">
+<h3>Problem 4.</h3>
+<ol start="15" style="list-style-type: example">
+<li>Again, using the LA housing price data, fit a model that estimates sqrt(price) solely as a function of sqrt(square footage) using maximum likelihood estimation (MLE) (hint: you’ll need to use the <code>mle</code> function from the <code>stats4</code> package). Recall that in a linear regression, we assume that the residuals are normally distributed, so for MLE in this case we want a likelihood function that fits a normal distribution to the residuals:</li>
+</ol>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="co">#Note: you'll need to edit this slightly to make it work for your data</span>
+LL &lt;-<span class="st"> </span>function(beta0, beta1, mu, sigma) {
+    R =<span class="st"> </span>y -<span class="st"> </span>x *<span class="st"> </span>beta1 -<span class="st"> </span>beta0
+    <span class="co">#</span>
+    R =<span class="st"> </span><span class="kw">suppressWarnings</span>(<span class="kw">dnorm</span>(R, mu, sigma, <span class="dt">log =</span> <span class="ot">TRUE</span>))
+    <span class="co">#</span>
+    -<span class="kw">sum</span>(R)
+}</code></pre>
+<ol start="16" style="list-style-type: example">
+<li><p>Try several different starting parameter values: How consistent are your results? Do your results typically match up with results from a simple linear regression? What do you think accounts for your results?</p></li>
+<li><p>Perform the same analysis with but with the addition of a variable for number of bathrooms (i.e., <span class="math">\(price ~ size + bathrooms\)</span>).</p></li>
+<li><p>In NO MORE than 4-6 sentences, explain how maximum likelihood estimation works in the context of this problem (i.e, how might you briefly describe your modeling approach within the context of a journal article methods section?)</p></li>
+</ol>
 </div>
 <div id="report-your-process" class="section level3">
 <h3>Report your process</h3>

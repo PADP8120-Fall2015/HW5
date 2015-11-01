@@ -25,6 +25,7 @@ Topics covered in this homework include:
 - Matrix regression 
 - Interactions and categorical variables
 - Transformations
+- Maximum Likelihood
 
 ## Problems
 
@@ -88,6 +89,27 @@ la.dat = read.csv('Input/LA.csv')
 (@) Interpret your substantive findings.
 
 (@) Discuss any potential shortcomings of this model and key future directions that you might take if you sought to better understand LA housing prices. 
+
+### Problem 4.
+
+(@) Again, using the LA housing price data, fit a model that estimates sqrt(price) solely as a function of sqrt(square footage) using maximum likelihood estimation (MLE) (hint: you'll need to use the `mle` function from the `stats4` package). Recall that in a linear regression, we assume that the residuals are normally distributed, so for MLE in this case we want a likelihood function that fits a normal distribution to the residuals:
+
+```{r eval=FALSE}
+#Note: you'll need to edit this slightly to make it work for your data
+LL <- function(beta0, beta1, mu, sigma) {
+    R = y - x * beta1 - beta0
+    #
+    R = suppressWarnings(dnorm(R, mu, sigma, log = TRUE))
+    #
+    -sum(R)
+}
+```
+
+(@) Try several different starting parameter values: How consistent are your results? Do your results typically match up with results from a simple linear regression? What do you think accounts for your results?
+
+(@) Perform the same analysis with but with the addition of a variable for number of bathrooms (i.e., $price ~ size + bathrooms$).
+
+(@) In NO MORE than 4-6 sentences, explain how maximum likelihood estimation works in the context of this problem (i.e, how might you briefly describe your modeling approach within the context of a journal article methods section?)
 
 ### Report your process
 
