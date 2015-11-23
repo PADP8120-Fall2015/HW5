@@ -1,0 +1,180 @@
+
+---
+title: "PADP8120_Homework5"
+author: "Fall 2015"
+date: "![Creative Commons Attribution License](images/cc-by.png)"
+output:
+  html_document:
+    highlight: pygments
+    theme: cerulean
+widgets     : [mathjax]            # {mathjax, quiz, bootstrap}
+---
+
+
+# Homework 5
+
+Guidelines: Homeworks should be clear and legible, with answers clearly indicated and work shown. Homeworks will be given a minus, check, or check plus owing to completion and correctness. You are welcome to work with others but please submit your own work. Your homework must be produced in an R Markdown (.rmd) file submitted via github. If you are having trouble accomplishing this, please refer to the [guide](http://spia.uga.edu/faculty_pages/tyler.scott/teaching/PADP8120_Fall2015/Homeworks/submitting_homework.shtml). 
+
+
+This homework adapts materials from the work of Michael Lynch (http://spia.uga.edu/faculty_pages/mlynch/) and Matthew Salganik (http://www.princeton.edu/~mjs3/)
+
+## Topics
+
+Topics covered in this homework include:
+
+- Matrix regression 
+- Interactions and categorical variables
+- Transformations
+- Maximum Likelihood
+
+## Problems
+
+### Problem 1. 
+
+Just as you did for Homework 4, write a function that emulates the `lm` function in R for a simple (bivariate) regression. *However, this time your function needs to make use of the matrix regression approach we learned in Week 12.* Like the `lm` function, your function should be able to estimate and report to the screen $\beta_k$ coefficients, standard errors for these coefficients, and corresponding t-values and p-values. It should also report the residual standard error. Be sure to show your code. Compare your results to the results of the `lm` function on some data of your choosing to verify that things are working correctly. 
+
+### Problem 2.
+
+#### Occupational prestige 
+
+Let's try to understand the relationship between typical education, income, job type, and occupation prestigue using the data from Duncan.  You can read the documentation [here](http://socserv.socsci.mcmaster.ca/jfox/Books/Applied-Regression-2E/datasets/Duncan.pdf)
+
+Here's some code to read in and clean the data.  And for the purposes of this assignment we are going to exclude professionals.  In other words, we are only concerned about white collar and blue collar occupations.  Again, notice that the unit here is occupations.
+
+```{r message=FALSE,warnings=FALSE}
+library(dplyr)
+occup <- read.table("input/Duncan.txt", header=TRUE)
+occup$state <- rownames(occup)
+rownames(occup) <- NULL
+occup <- filter(occup, type %in% c("wc", "bc"))
+head(occup)
+```
+
+(@) Run a regression model to predict the prestige of an occupation based on the level of education of people in that occupation (measured by the percentage of people in the field who have graduated from high school in 1950).
+
+(@) Make a plot showing the data and the model that you fit.
+
+(@) Now run a regression model to predict the prestige of an occupation based on the level of education of people in that occupation (measured by the percentage of people in the field who have graduated from high school in 1950) and the occupation type (blue collar/white collar).
+
+(@) Make a plot showing the data and the model that you fit.
+
+(@) Now run a regression model to predict occupational prestige based on the level of education and occupation type where the relationship between education and occupational prestige is allowed to vary by occupation type.
+
+(@) Calculate predicted levels of prestige for white collar and blue collar jobs at various levels of income and report these predicted levels in a graph (no table needed). What have you learned about prestige thanks to the interactive variable?
+
+(@) How would you summarize the conclusions from three models above?
+
+(@) Now run a the following regression model: `lm(prestige ∼ income + education + income ∗ education)` and substantively describe the effects of the independent variables on the dependent variable. In other words, describe the relationships implied by the interactive terms. Does this interaction make sense to you? Why or why not? No table needed.
+
+(@) Use calculus to identify the predicted impact of a one unit change in income on occupational prestige. Assess whether this impact is statistically distinct from zero. Remember that the variance for an estimated marginal effect $ \frac{\partial \hat{y}}{\partial x} = \hat{\beta}_x + \hat{\beta}_{xz}*z$ where x and z are interacted independent variables, can be calculated by:
+
+$$ V(\frac{\partial \hat{y}}{\partial x} = V(\hat{\beta}_x) + z^2 V(\hat{\beta}_{xz} + 2z * Cov(\hat{\beta}_x,\hat{\beta}_{xz}) $$
+
+(@) ￼Because the marginal effect of x depends on values of z, you will need to assess whether the marginal effect is significant across a range of values of z.
+
+### Problem 3.
+
+#### LA Housing Prices
+
+Load the LA housing prices dataset:
+
+```{r message = FALSE,eval=TRUE}
+la.dat = read.csv('Input/LA.csv')
+```
+
+(@) Fit the best model you can to predict housing prices in LA on the basis of theory (i.e., what should matter for house prices?) and model fit (i.e., DO NOT use stepwise regression, but feel free to add/subtract/transform variables as you feel are necessary).
+
+(@) Demonstrate the goodness-of-fit of your model (i.e, show that key assumptions appear to be met and that the model would seem to be a viable basis for inference). 
+
+(@) Interpret your substantive findings.
+
+(@) Discuss any potential shortcomings of this model and key future directions that you might take if you sought to better understand LA housing prices. 
+
+### Problem 4.
+
+(@) Again, using the LA housing price data, fit a model that estimates sqrt(price) solely as a function of sqrt(square footage) using maximum likelihood estimation (MLE) (hint: you'll need to use the `mle` function from the `stats4` package). Recall that in a linear regression, we assume that the residuals are normally distributed, so for MLE in this case we want a likelihood function that fits a normal distribution to the residuals:
+
+```{r eval=FALSE}
+#Note: you'll need to edit this slightly to make it work for your data
+LL <- function(beta0, beta1, mu, sigma) {
+    R = y - x * beta1 - beta0
+    #
+    R = suppressWarnings(dnorm(R, mu, sigma, log = TRUE))
+    #
+    -sum(R)
+}
+```
+
+```{r}
+LL <- function(beta0, beta1, mu, sigma) {
+    R = sqrt(la.dat$price) - sqrt(la.dat$sqft) * beta1 - beta0
+    #
+    R = suppressWarnings(dnorm(R, mu, sigma, log = TRUE))
+    #
+    -sum(R)
+}
+library(stats4)
+ml.est = mle(LL, start = list(beta0 = 10, beta1 = 10, sigma=1),
+             fixed = list(mu = 0),
+             nobs = length(la.dat$price))
+
+summary(ml.est)
+```
+
+(@) Try several different starting parameter values: How consistent are your results? Do your results typically match up with results from a simple linear regression? What do you think accounts for your results?
+
+```{r}
+summary(lm(sqrt(price)~sqrt(sqft),data = la.dat))
+```
+
+If you use decent starting values, the results should be pretty close. In my case, a one-unit increase in $SqFt^{1/2}$ is predicted to increase the square root of the house price by 37.78, while for the OLS model the same coefficient is 37.91. The primary reason for the difference is that the MLE approach models the variance (notice that the MLE function takes an starting input for sigma) and provides an estimate for sigma. Also, the better the model fit the better you'll be able to estimate things. For instance, if you don't transform sqft and price, the model performs more poorly.  
+
+(@) Perform the same analysis with but with the addition of a variable for number of bathrooms (i.e., $price ~ size + bathrooms$).
+
+```{r}
+LL2 <- function(beta0, beta1, beta2, mu, sigma) {
+    R = sqrt(la.dat$price) - 
+      la.dat$bath * beta2 - sqrt(la.dat$sqft) * beta1 - beta0
+    #
+    R = suppressWarnings(dnorm(R, mu, sigma, log = TRUE))
+    #
+    -sum(R)
+}
+library(stats4)
+ml.est2 = mle(LL2, start = list(beta0 = 10, beta1 = 10, beta2 = 10,sigma=1),
+             fixed = list(mu = 0),
+             nobs = length(la.dat$price))
+
+summary(ml.est2)
+```
+
+(@) In NO MORE than 4-6 sentences, explain how maximum likelihood estimation works in the context of this problem (i.e, how might you briefly describe your modeling approach within the context of a journal article methods section?)
+
+### Report your process
+
+You're encouraged to reflect on what was hard/easy, problems you solved, helpful tutorials you read, etc. Give credit to your sources, whether it's a blog post, a fellow student, an online tutorial, etc.
+
+### Rubric
+
+Minus: Didn't tackle at least 3 tasks. Or didn't make companion graphs. Didn't interpret anything but left it all to the "reader". Or more than one technical problem that is relatively easy to fix. It's hard to find the report in our repo.
+
+Check: Completed, but not fully accurate and/or readable. Requires a bit of detective work on my part to see what you did
+
+Check plus: Hits all the elements. No obvious mistakes. Pleasant to read. No heroic detective work required. Solid.
+
+
+
+#### The command below is helpful for debugging, please don't change it
+
+```{r echo=FALSE}
+sessionInfo()
+```
+
+
+
+
+
+
+
+
+
