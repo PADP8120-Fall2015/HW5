@@ -66,9 +66,9 @@ head(occup)
 
 (@) Now run a the following regression model: `lm(prestige ∼ income + education + income ∗ education)` and substantively describe the effects of the independent variables on the dependent variable. In other words, describe the relationships implied by the interactive terms. Does this interaction make sense to you? Why or why not? No table needed.
 
-(@) Use calculus to identify the predicted impact of a one unit change in income on occupational prestige. Assess whether this impact is statistically distinct from zero. Remember that the variance for an estimated marginal effect $ \frac{\partial \hat{y}}{\partial x} = \hat{\beta}_x + \hat{\beta}_{xz}*z$ where x and z are interacted independent variables, can be calculated by:
+(@) Use calculus to identify the predicted impact of a one unit change in income on occupational prestige. Assess whether this impact is statistically distinct from zero. Remember that the variance for an estimated marginal effect $\frac{\partial \hat{y}}{\partial x} = \hat{\beta}_x + \hat{\beta}_{xz}*z$ where x and z are interacted independent variables, can be calculated by:
 
-$$ V(\frac{\partial \hat{y}}{\partial x} = V(\hat{\beta}_x) + z^2 V(\hat{\beta}_{xz} + 2z * Cov(\hat{\beta}_x,\hat{\beta}_{xz}) $$
+$$ V(\frac{\partial \hat{y}}{\partial x}) = V(\hat{\beta}_x) + z^2 V(\hat{\beta}_{xz}) + 2z * Cov(\hat{\beta}_x,\hat{\beta}_{xz}) $$
 
 (@) ￼Because the marginal effect of x depends on values of z, you will need to assess whether the marginal effect is significant across a range of values of z.
 

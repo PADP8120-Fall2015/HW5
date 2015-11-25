@@ -126,9 +126,9 @@ occup &lt;-<span class="st"> </span><span class="kw">filter</span>(occup, type %
 <li><p>Calculate predicted levels of prestige for white collar and blue collar jobs at various levels of income and report these predicted levels in a graph (no table needed). What have you learned about prestige thanks to the interactive variable?</p></li>
 <li><p>How would you summarize the conclusions from three models above?</p></li>
 <li><p>Now run a the following regression model: <code>lm(prestige ∼ income + education + income ∗ education)</code> and substantively describe the effects of the independent variables on the dependent variable. In other words, describe the relationships implied by the interactive terms. Does this interaction make sense to you? Why or why not? No table needed.</p></li>
-<li><p>Use calculus to identify the predicted impact of a one unit change in income on occupational prestige. Assess whether this impact is statistically distinct from zero. Remember that the variance for an estimated marginal effect $  = <em>x + </em>{xz}*z$ where x and z are interacted independent variables, can be calculated by:</p></li>
+<li><p>Use calculus to identify the predicted impact of a one unit change in income on occupational prestige. Assess whether this impact is statistically distinct from zero. Remember that the variance for an estimated marginal effect <span class="math">\(\frac{\partial \hat{y}}{\partial x} = \hat{\beta}_x + \hat{\beta}_{xz}*z\)</span> where x and z are interacted independent variables, can be calculated by:</p></li>
 </ol>
-<p><span class="math">\[ V(\frac{\partial \hat{y}}{\partial x} = V(\hat{\beta}_x) + z^2 V(\hat{\beta}_{xz} + 2z * Cov(\hat{\beta}_x,\hat{\beta}_{xz}) \]</span></p>
+<p><span class="math">\[ V(\frac{\partial \hat{y}}{\partial x}) = V(\hat{\beta}_x) + z^2 V(\hat{\beta}_{xz}) + 2z * Cov(\hat{\beta}_x,\hat{\beta}_{xz}) \]</span></p>
 <ol start="10" style="list-style-type: example">
 <li>￼Because the marginal effect of x depends on values of z, you will need to assess whether the marginal effect is significant across a range of values of z.</li>
 </ol>
@@ -180,7 +180,7 @@ LL &lt;-<span class="st"> </span>function(beta0, beta1, mu, sigma) {
 <h4>The command below is helpful for debugging, please don’t change it</h4>
 <pre><code>## R version 3.2.2 (2015-08-14)
 ## Platform: x86_64-apple-darwin13.4.0 (64-bit)
-## Running under: OS X 10.11 (El Capitan)
+## Running under: OS X 10.11.1 (El Capitan)
 ## 
 ## locale:
 ## [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
