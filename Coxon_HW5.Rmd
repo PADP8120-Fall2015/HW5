@@ -34,7 +34,8 @@ Topics covered in this homework include:
 Just as you did for Homework 4, write a function that emulates the `lm` function in R for a simple (bivariate) regression. *However, this time your function needs to make use of the matrix regression approach we learned in Week 12.* Like the `lm` function, your function should be able to estimate and report to the screen $\beta_k$ coefficients, standard errors for these coefficients, and corresponding t-values and p-values. It should also report the residual standard error. Be sure to show your code. Compare your results to the results of the `lm` function on some data of your choosing to verify that things are working correctly.
 
 ###### Formulas
-1. Our model is: __$\mathbf{Y} = \mathbf{X} \mathbf{\beta} + \mathbf{\epsilon}$__
+
+1. The model is: __$\mathbf{Y} = \mathbf{X} \mathbf{\beta} + \mathbf{\epsilon}$__
 
 2. We want to find __$\mathbf{b}$__ that minimizes the residual sum of squares.
 
@@ -47,7 +48,10 @@ y = matrix(rnorm(100),ncol=1)
 x.vars = as.matrix(data.frame(intercept = 1,x1,x2))
 
 #coefficient estimates
-victoria.matrix.lm = function(outcome.matrix,design.matrix){betas = solve(t(x.vars) %*% x.vars) %*% t(x.vars) %*% outcome.matrix
+matrix.lm = function(outcome.matrix,design.matrix)
+  {
+# coefficient estimates
+  betas = solve(t(x.vars) %*% x.vars) %*% t(x.vars) %*% outcome.matrix
 betas = round(betas,5)
 #estimate of sigma-squared
 dSigmaSq <- sum((outcome.matrix - x.vars%*%betas)^2)/(nrow(x.vars)-ncol(x.vars))
@@ -64,7 +68,7 @@ p.vals = round(2*(1 - pt(abs(t.obs),df = df)),5)
 #print it out in a table
 return(data.frame(coefs = betas,SE = vStdErr,t.obs = t.obs,p.vals = p.vals))}
 
-victoria.matrix.lm(y,x.vars)
+matrix.lm(y,x.vars)
 
 summary(lm(y~x1+x2))
 ```
@@ -72,13 +76,13 @@ summary(lm(y~x1+x2))
 
 #### Occupational prestige 
 
-Let's try to understand the relationship between typical education, income, job type, and occupation prestigue using the data from Duncan.  You can read the documentation [here](http://socserv.socsci.mcmaster.ca/jfox/Books/Applied-Regression-2E/datasets/Duncan.pdf)
+Let's try to understand the relationship between typical education, income, job type, and occupation prestige using the data from Duncan.  You can read the documentation [here](http://socserv.socsci.mcmaster.ca/jfox/Books/Applied-Regression-2E/datasets/Duncan.pdf)
 
 Here's some code to read in and clean the data.  And for the purposes of this assignment we are going to exclude professionals.  In other words, we are only concerned about white collar and blue collar occupations.  Again, notice that the unit here is occupations.
 
 ```{r message=FALSE,warnings=FALSE}
 library(dplyr)
-occup <- read.table("input/Duncan.txt", header=TRUE)
+occup <- read.table("https://raw.githubusercontent.com/vcoxon/Labs/master/input/Duncan.txt", header=TRUE)
 occup$state <- rownames(occup)
 rownames(occup) <- NULL
 occup <- filter(occup, type %in% c("wc", "bc"))
@@ -86,18 +90,58 @@ head(occup)
 ```
 
 (@) Run a regression model to predict the prestige of an occupation based on the level of education of people in that occupation (measured by the percentage of people in the field who have graduated from high school in 1950).
+```{r}
+summary(model1 <- lm(prestige ~ education,occup))
+```
 
 (@) Make a plot showing the data and the model that you fit.
+```{r}
+library(ggplot2)
+library(ggthemes)
+
+plot(prestige ~ education, data = occup)
+abline(reg = model1)
+```
 
 (@) Now run a regression model to predict the prestige of an occupation based on the level of education of people in that occupation (measured by the percentage of people in the field who have graduated from high school in 1950) and the occupation type (blue collar/white collar).
-
+```{r}
+summary(model2 <- lm(prestige ~ education + type, data = occup))
+```
 (@) Make a plot showing the data and the model that you fit.
-
+```{r}
+plot(prestige ~ education, occup)
+#model1 line
+abline(a = model2$coefficients[1], b = model2$coefficients[2], col = 'deepskyblue', lwd = 3)
+#model2 line
+abline(a = model2$coefficients[1] + model2$coefficients[3], b = model2$coefficients[2], col = 'deepskyblue4', lwd = 3)
+```
 (@) Now run a regression model to predict occupational prestige based on the level of education and occupation type where the relationship between education and occupational prestige is allowed to vary by occupation type.
+```{r}
+summary(model3 <- lm(prestige ~ education * type, data = occup))
+```
 
 (@) Calculate predicted levels of prestige for white collar and blue collar jobs at various levels of income and report these predicted levels in a graph (no table needed). What have you learned about prestige thanks to the interactive variable?
+```{r}
+pred.vals = predict(model3,newdata = data.frame(education = rep(seq(0,100,10),2),type = rep(c('wc','bc'),each = 11)))
 
+plot(x = rep(seq(0,100,10),2),y = pred.vals, col = rep(c('deepskyblue4','deepskyblue'), each = 11), pch = 19,xlab = 'Education', ylab = 'Predicted Prestige') 
+1.0112 - 0.6323
+```
 (@) How would you summarize the conclusions from three models above?
+*As demonstrated by the graphs, there is a positive relationship between a profession's level of education and occupational prestige for people holding both white collar and blue collar jobs.*
+
+*Interstingly, it appears that additional education may not bring equivalent gains in occcupational prestige for white collar workers compared to blue collar workers. Model 3 predicts that for each one unit increase in degrees held by blue collar workers, occupational prestige should increase by approximately 1.01 units; for white collar workers, occupational prestige is predicted to increase by 0.3789 or approximately 0.38 (Beta1 - Beta3; 1.0112 - 0.6323).*
+
+*Model 1, where prestige was a sole function of education, appeared to fit the data better than both Models 2 (prestige = Beta0 + education + type) and 3 (prestige = Beta0 + education(type). **For confirmation of this statement, the models need to be checked with ANOVA.** 
+```{r}
+library(car)
+anova(model1,model2,model3)
+```
+*I was wrong; Model 3 is the "best" option.  It would appear that the higher level of education a profession demands, the higher the level of occupational. This also confirms that it is the **level of education** that is associated with prestige and not the type of job (blue collar or white collar). However, Models 2 and 3, with different intercepts, hint that the base level of education required in both white collar and blue collar jobs may be different.*
+```{r}
+tapply(occup$education, occup$type, mean)
+boxplot(prestige ~ type, data = occup,names = c("BC","Professional" ,"WC"), col = c("deepskyblue4", "gainsboro","deepskyblue"), xlab = "Type of Occupation")
+```
 
 (@) Now run a the following regression model: `lm(prestige ∼ income + education + income ∗ education)` and substantively describe the effects of the independent variables on the dependent variable. In other words, describe the relationships implied by the interactive terms. Does this interaction make sense to you? Why or why not? No table needed.
 
