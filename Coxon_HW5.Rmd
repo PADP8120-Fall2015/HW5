@@ -214,6 +214,7 @@ points(education.sim, lower.bound, type = "l", lty = 2)
 points(education.sim, rep(0,length(education.sim)), type = "l", col = "gray48")
 ```
 
+*The 95% confidence interval for the marginal effect of income does not include 0 for levels of education below 60. This plot supports our previous finding in number 9.*
 
 ### Problem 3.
 
@@ -222,14 +223,52 @@ points(education.sim, rep(0,length(education.sim)), type = "l", col = "gray48")
 Load the LA housing prices dataset:
 
 ```{r message = FALSE,eval=FALSE}
-la.dat = read.csv('Input/LA.csv')
+la.house.dat = read.csv('https://raw.githubusercontent.com/vcoxon/HW5/master/input/LA.csv')
 ```
 
 (@) Fit the best model you can to predict housing prices in LA on the basis of theory (i.e., what should matter for house prices?) and model fit (i.e., DO NOT use stepwise regression, but feel free to add/subtract/transform variables as you feel are necessary).
 
+*My theoretical expectation is that price of the house is contingent on the quality of the local public school district. That particular data is not included in this data set, but a a proxy exists; city. Additional variables  that will impact the price of housing in LA are the type of housing (SFR v. Townhome/Condo), bedrooms, bathrooms, square footage, a pool and/or a spa, and the garage bays. 
+```{r}
+#There are variables that need to be reformatted so we can analyze them.
+
+#Garage: recode from NA to 0
+la.house.dat$garage = ifelse(is.na(la.house.dat$garage),0,la.house.dat$garage)
+#Pool:"Y" = 1; 0 otherwise
+la.house.dat$pool =ifelse(la.house.dat$pool=='Y',1,0)
+```
+
+*Because I think the type of housing makes a huge difference in the price, I definitely need to deal with the 39 missing values for the categorical variable 'type'. 
+```{r}
+la.house.dat$type = ifelse(la.house.dat$type=='', 'Alternative', as.character(la.house.dat$type))
+tapply(la.house.dat$price, la.house.dat$type, mean)
+
+par(mfrow=c(2,2))
+hist(la.house.dat$price, breaks=100000)
+hist(la.house.dat$sqft, breaks=1000)
+hist(log(la.house.dat$price),breaks=100)
+hist(log(la.house.dat$sqft), breaks=100)
+```
+
+*Both price and square footage have a significant right skew; I needed to take a natural log of each so that the variables are less skewed.*
+
 (@) Demonstrate the goodness-of-fit of your model (i.e, show that key assumptions appear to be met and that the model would seem to be a viable basis for inference). 
+```{r}
+summary(la.model1 <- lm(log(price) ~ log(sqft)*type + bed + bath + pool + garage, la.house.dat))
+
+summary(la.model2 <- lm(log(price) ~ log(sqft) + type + bed + bath + pool + garage, la.house.dat))
+
+summary(la.model2 <- lm(log(price) ~ log(sqft) + type + bed + bath + pool + garage, la.house.dat))
+
+summary(la.model3 <- lm(log(price) ~ log(sqft) + bed + bath + pool + garage, la.house.dat))
+
+library(stargazer); library(knitr)
+
+stargazer(la.model1,la.model2,la.model3,type = 'text', omit.stat = c("f", "rsq"), column.labels = c('Model 1', 'Model 2', 'Model 3'), model.names = F, model.numbers = F)
+```
 
 (@) Interpret your substantive findings.
+*
 
 (@) Discuss any potential shortcomings of this model and key future directions that you might take if you sought to better understand LA housing prices. 
 
