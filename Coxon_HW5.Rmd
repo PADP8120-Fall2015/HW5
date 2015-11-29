@@ -132,23 +132,67 @@ plot(x = rep(seq(0,100,10),2),y = pred.vals, col = rep(c('deepskyblue4','deepsky
 
 *Interstingly, it appears that additional education may not bring equivalent gains in occcupational prestige for white collar workers compared to blue collar workers. Model 3 predicts that for each one unit increase in degrees held by blue collar workers, occupational prestige should increase by approximately 1.01 units; for white collar workers, occupational prestige is predicted to increase by 0.3789 or approximately 0.38 (Beta1 - Beta3; 1.0112 - 0.6323).*
 
+*It also appears that the higher level of education a profession demands, the higher the level of occupational prestige. This also seems to confirm that it is the **level of education** that is associated with prestige and not the type of job (blue collar or white collar). However, Models 2 and 3, with different intercepts, hint that the base level of education required in both white collar and blue collar jobs may be different.*
+
 *Model 1, where prestige was a sole function of education, appeared to fit the data better than both Models 2 (prestige = Beta0 + education + type) and 3 (prestige = Beta0 + education(type). **For confirmation of this statement, the models need to be checked with ANOVA.** 
 ```{r}
 library(car)
 anova(model1,model2,model3)
 ```
-*I was wrong; Model 3 is the "best" option.  It would appear that the higher level of education a profession demands, the higher the level of occupational. This also confirms that it is the **level of education** that is associated with prestige and not the type of job (blue collar or white collar). However, Models 2 and 3, with different intercepts, hint that the base level of education required in both white collar and blue collar jobs may be different.*
+*An ANOVA analysis of the models indicates that there is not a significant difference between the models. Maybe we should just go with the simpler model...*  
+
+
 ```{r}
 tapply(occup$education, occup$type, mean)
-boxplot(prestige ~ type, data = occup,names = c("BC","Professional" ,"WC"), col = c("deepskyblue4", "gainsboro","deepskyblue"), xlab = "Type of Occupation")
+boxplot(prestige ~ type, data = occup,names = c("BC","Professional" ,"WC"), col = c("cadetblue1", "gainsboro","antiquewhite"), xlab = "Type of Occupation")
 ```
 
-(@) Now run a the following regression model: `lm(prestige ∼ income + education + income ∗ education)` and substantively describe the effects of the independent variables on the dependent variable. In other words, describe the relationships implied by the interactive terms. Does this interaction make sense to you? Why or why not? No table needed.
+*The graph confirms my hunch that the base level (and by proxy, the mean level) of education is different for white collar and blue colllar professions.*
 
-(@) Use calculus to identify the predicted impact of a one unit change in income on occupational prestige. Assess whether this impact is statistically distinct from zero. Remember that the variance for an estimated marginal effect $ \frac{\partial \hat{y}}{\partial x} = \hat{\beta}_x + \hat{\beta}_{xz}*z$ where x and z are interacted independent variables, can be calculated by:
+(@) Now run the following regression model: `lm(prestige ∼ income + education + income ∗ education)` and substantively describe the effects of the independent variables on the dependent variable. In other words, describe the relationships implied by the interactive terms. Does this interaction make sense to you? Why or why not? No table needed.
+```{r}
+summary(model4 <- lm(prestige ∼ income + education + income ∗ education, occup))
+```
+
+*Model 4 regresses prestige on income, education, and the interaction of income given an education level.*
+
+*The predicted impact of a one unit change in income on occupational prestige is approximately 0.737786 + 0.256704(-0.003559). According to our model, the relationship between income and occupational prestige is conditional on education; as an individual's educational level rises, income plays a diminishing role on predicted occupational prestige.*   
+
+*Conversely, the predicted impact of a one unit increase in education on occupatinal prestige is approximately 0.256704 + 0.737786(-0.003559). According to our model, the relationship between education and occupational prestige is conditional on income; as an individual's income level rises, education plays a diminishing role on predicted occupational prestige.*  
+
+*It would appear that education and income are proxies or substitutes for one another when it comes to predicting occupational prestige. Considering this, it could be useful to reevaluate the necessity of including the intercation term; income(education).*
+```{r}
+model5 = lm(prestige ~ income + education, occup)
+anova(model5,model4)
+```
+*We fail to reject the null that there is a difference between models 4 and 5 (0.5471 > 0.05). Therefore, in the spirit of parsimony, model 5 is the better model because it seems to reduce the "noise" from the interaction variable (income * education).*
+
+(@) Use calculus to identify the predicted impact of a one unit change in income on occupational prestige. Assess whether this impact is statistically distinct from zero. 
+
+Remember that the variance for an __estimated marginal effect__ $ \frac{\partial \hat{y}}{\partial x} = \hat{\beta}_x + \hat{\beta}_{xz}*z$ where x and z are interacted independent variables, can be calculated by:
 
 $$ V(\frac{\partial \hat{y}}{\partial x} = V(\hat{\beta}_x) + z^2 V(\hat{\beta}_{xz} + 2z * Cov(\hat{\beta}_x,\hat{\beta}_{xz}) $$
+```{r}
+model4
+##compute marginal effect for different income levels (income = 1 to 100)
+income.sim = seq(1:100)
+Beta_xhat = model4$coefficients[2]
+Beta_xzhat =model4$coefficients[4]
+inc.slopes = Beta_xhat + Beta_xzhat * income.sim
 
+#compute variance for interaction term
+var.Beta_xhat = vcov(model4)[2,2]
+var.Beta_xzhat = vcov(model4)[4,4]
+cov.Beta_xhat.Beta_xzhat = vcov(model4)[2,4]
+#now for the formula...
+var.dyhat.dx = var.Beta_xhat + income.sim^2*var.Beta_xzhat + 2*income.sim*cov.Beta_xhat.Beta_xzhat
+
+#p-values...
+p.vals = 2 * (1 - pt(abs(inc.slopes/sqrt(var.dyhat.dx)),df = nrow(occup) - length(model4)))
+
+plot(p.vals ~ income.sim, ylim = c(0,1), ylab = 'p-value', xlab = 'Income')
+abline(h = 0.05, col = 'firebrick1', lty = 2)
+```
 (@) ￼Because the marginal effect of x depends on values of z, you will need to assess whether the marginal effect is significant across a range of values of z.
 
 ### Problem 3.
