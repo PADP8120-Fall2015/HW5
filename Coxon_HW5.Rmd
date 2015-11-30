@@ -31,7 +31,12 @@ Topics covered in this homework include:
 
 ### Problem 1. 
 
-Just as you did for Homework 4, write a function that emulates the `lm` function in R for a simple (bivariate) regression. *However, this time your function needs to make use of the matrix regression approach we learned in Week 12.* Like the `lm` function, your function should be able to estimate and report to the screen $\beta_k$ coefficients, standard errors for these coefficients, and corresponding t-values and p-values. It should also report the residual standard error. Be sure to show your code. Compare your results to the results of the `lm` function on some data of your choosing to verify that things are working correctly.
+Just as you did for Homework 4, write a function that emulates the `lm` function in R for a simple (bivariate) regression. *However, this time your function needs to make use of the matrix regression approach we learned in Week 12.* Like the `lm` function, your function should be able to estimate and report to the screen 
+- $\beta_k$ coefficients, 
+- standard errors for these coefficients, and
+- corresponding t-values and p-values. 
+- It should also report the residual standard error. 
+Be sure to show your code. Compare your results to the results of the `lm` function on some data of your choosing to verify that things are working correctly.
 
 ###### Formulas
 
@@ -223,54 +228,104 @@ points(education.sim, rep(0,length(education.sim)), type = "l", col = "gray48")
 Load the LA housing prices dataset:
 
 ```{r message = FALSE,eval=FALSE}
-la.house.dat = read.csv('https://raw.githubusercontent.com/vcoxon/HW5/master/input/LA.csv')
+la.house.data = read.csv('https://raw.githubusercontent.com/vcoxon/HW5/master/input/LA.csv')
+#Find all the missing values for eaach variable.
+sapply(la.house.data, function(x) sum(is.na(x)))
 ```
 
 (@) Fit the best model you can to predict housing prices in LA on the basis of theory (i.e., what should matter for house prices?) and model fit (i.e., DO NOT use stepwise regression, but feel free to add/subtract/transform variables as you feel are necessary).
 
-*My theoretical expectation is that price of the house is contingent on the quality of the local public school district. That particular data is not included in this data set, but a a proxy exists; city. Additional variables  that will impact the price of housing in LA are the type of housing (SFR v. Townhome/Condo), bedrooms, bathrooms, square footage, a pool and/or a spa, and the garage bays. 
-```{r}
-#There are variables that need to be reformatted so we can analyze them.
+*My theoretical expectation is that price of the house is contingent on the quality of the local public school district. That particular data is not included in this data set, but it is something to think about going forward.* 
 
-#Garage: recode from NA to 0
-la.house.dat$garage = ifelse(is.na(la.house.dat$garage),0,la.house.dat$garage)
+*Additional variables supported by theory that impact the price of housing in LA are the type of housing (SFR v. Townhome/Condo), bedrooms, bathrooms, square footage, a pool, and the number of garage bays.* 
+
+*There are variables that need to be reformatted so we can properly analyze them.*
+```{r}
+la.house.data = read.csv('https://raw.githubusercontent.com/vcoxon/HW5/master/input/LA.csv')
+#I know this looks stupid to re-import the data, but I was having problems knitting and this website offered a solution: http://stackoverflow.com/questions/32811527/error-in-evalexpr-envir-enclos-during-knit-in-r-markdown
+
+la.house.data$garage
+#Garage: need to recode NA to 0 
+la.house.data$garage = ifelse(is.na(la.house.data$garage),0,la.house.data$garage)  
+#When I was doing the homework I checked to see that the command was successful via  'la.house.data$garage'
+
 #Pool:"Y" = 1; 0 otherwise
-la.house.dat$pool =ifelse(la.house.dat$pool=='Y',1,0)
+la.house.data$pool
+la.house.data$pool = ifelse(la.house.data$pool=='Y',1,0)  
+#When I was doing the homework I checked to see that the command was successful via 'la.house.data$pool'
 ```
 
-*Because I think the type of housing makes a huge difference in the price, I definitely need to deal with the 39 missing values for the categorical variable 'type'. 
-```{r}
-la.house.dat$type = ifelse(la.house.dat$type=='', 'Alternative', as.character(la.house.dat$type))
-tapply(la.house.dat$price, la.house.dat$type, mean)
+*Because I think the type of housing makes a huge difference in the price (perhaps an interaction variable somewhere?), I definitely need to deal with the 39 missing values for the categorical variable 'type'.*
 
-par(mfrow=c(2,2))
-hist(la.house.dat$price, breaks=100000)
-hist(la.house.dat$sqft, breaks=1000)
-hist(log(la.house.dat$price),breaks=100)
-hist(log(la.house.dat$sqft), breaks=100)
+```{r}
+tapply(la.house.data$price, la.house.data$type, mean)
+la.house.data$type = ifelse(la.house.data$type=='', 'Alternative', as.character(la.house.data$type))
+tapply(la.house.data$price, la.house.data$type, mean)
 ```
 
 *Both price and square footage have a significant right skew; I needed to take a natural log of each so that the variables are less skewed.*
 
-(@) Demonstrate the goodness-of-fit of your model (i.e, show that key assumptions appear to be met and that the model would seem to be a viable basis for inference). 
 ```{r}
-summary(la.model1 <- lm(log(price) ~ log(sqft)*type + bed + bath + pool + garage, la.house.dat))
+par(mfrow=c(2,2))
+hist(la.house.data$price, breaks=100000)
+hist(la.house.data$sqft, breaks=1000)
+hist(log(la.house.data$price),breaks=100)
+hist(log(la.house.data$sqft), breaks=100)
 
-summary(la.model2 <- lm(log(price) ~ log(sqft) + type + bed + bath + pool + garage, la.house.dat))
+#almost everything model with intercation between square footage and type
+summary(la.model1 <- lm(log(price) ~ log(sqft)*type + bed + bath + pool + garage, la.house.data))
 
-summary(la.model2 <- lm(log(price) ~ log(sqft) + type + bed + bath + pool + garage, la.house.dat))
+#removed interaction between square footage and type
+summary(la.model2 <- lm(log(price) ~ log(sqft) + type + bed + bath + pool + garage, la.house.data))
 
-summary(la.model3 <- lm(log(price) ~ log(sqft) + bed + bath + pool + garage, la.house.dat))
+#removed type because not as significant relative to the other variables
+summary(la.model3 <- lm(log(price) ~ log(sqft) + bed + bath + pool + garage, la.house.data))
 
 library(stargazer); library(knitr)
 
 stargazer(la.model1,la.model2,la.model3,type = 'text', omit.stat = c("f", "rsq"), column.labels = c('Model 1', 'Model 2', 'Model 3'), model.names = F, model.numbers = F)
 ```
 
+*Model 1 regresses the log of price on the interaction term log of square footage * type (alternative, townhome/condo, sing family residence), bedrooms, bathrooms, if a house has a pool, and the number of garage bays.* 
+
+*Model 2 removed the interaction between square footage and type. In Model 3, I removed type because it did not appear to be as significant a contributor to the price relative to the other variables.*
+
+*I need to test for goodness of fit*
+```{r}
+anova(la.model1, la.model2, la.model3)
+BIC(la.model1, la.model2, la.model3)
+```
+*Anova indicates that Model 3 is the "best" model. However, the BIC scores for the models that included 'type' appear to contradict my intrpetation that the interaction of type with square foootage (Model 1) or the addition of type (Model 2) did not add significantly to the predictive ability of the model.*
+
+(@) Demonstrate the goodness-of-fit of your model (i.e, show that key assumptions appear to be met and that the model would seem to be a viable basis for inference). 
+
+__Key Asssumptions__
+-Residuals are 'iid'; identically & independently distributed (errors do no affect each other).
+-Nothing about Beta1 affects Beta2, ..., BetaK.
+-Linear Realtionship
+
+*Let's test for iid residuals.*
+```{r}
+par(mfrow = c(1,1)) # This sets the plot display back to one graph at a time.
+hist(la.model3$residuals, breaks = 100)
+#Q-Q Plot
+plot(la.model3,2)
+#Residual v. Fitted Plot
+plot(la.model3,1)
+#Residuals v. Leverage Plot w/Cook's Distance
+plot(la.model3,5)
+```
+
+*
+
 (@) Interpret your substantive findings.
 *
 
 (@) Discuss any potential shortcomings of this model and key future directions that you might take if you sought to better understand LA housing prices. 
+
+*The most obvious shortcoming is that the data do not provide any geo-spatial information; it doesn't include a variable that can help to provide information by neighborhoods. Everyone knows that "location, location, location" drives housing prices, but there are different neighborhood location specfic attributes (quality of public schools, proximity to work/shopping, safety, walkability) that can contribute to or detract from from desireability expressed by the prices of the available housing stock within neighborhoods.* 
+
+*The data need to allow researchers to "drill down" to a finer grain so that we can better see the contributors to variations in housing prices by having a better reference point; comparable housing within a specific neighborhood area.*
 
 ### Problem 4.
 
