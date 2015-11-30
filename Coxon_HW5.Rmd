@@ -246,10 +246,23 @@ la.house.data = read.csv('https://raw.githubusercontent.com/vcoxon/HW5/master/in
 #I know this looks stupid to re-import the data, but I was having problems knitting and this website offered a solution: http://stackoverflow.com/questions/32811527/error-in-evalexpr-envir-enclos-during-knit-in-r-markdown
 
 #Garage: need to recode NA to 0 
-#la.house.data
-la.house.data$garage = ifelse(is.na(la.house.data$garage),0,la.house.data$garage)  
-#When I was doing the homework I checked to see that the command was successful via  'la.house.data$garage'
+#Step 1
+la.house.data$garage <- ifelse(la.house.data$garage=="",0,as.character(la.house.data$garage))
+#Step 2
+la.house.data$garage <- ifelse(is.na(la.house.data$garage),0,as.character(la.house.data$garage))
+#Step 3: Need to convert 4+(character) to 4(number)
+la.house.data$garage <- ifelse(la.house.data$garage=="4+",4,la.house.data$garage)
+#When I was doing the homework I checked to see that the command was successful via  'la.house.data$garage'. I won't do that here...
+sum(la.house.data$garage=="4")
+sum(la.house.data$garage=="3")
+sum(la.house.data$garage=="2")
+sum(la.house.data$garage=="1")
+sum(la.house.data$garage=="0")
+```
 
+*However, I still have a problem. I converted "4+" into "4", since I would like to use garage variable as not dummy but discrete variable. But I wonder whether I should not change it and use this as dummy variable. There are only 6 entries that have 4+ garage bays, I thought it doesn't affect it too much.*
+
+```{r}
 #Pool:"Y" = 1; 0 otherwise
 #la.house.data$pool
 la.house.data$pool = ifelse(la.house.data$pool=='Y',1,0)  
