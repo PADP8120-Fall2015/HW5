@@ -227,14 +227,11 @@ points(education.sim, rep(0,length(education.sim)), type = "l", col = "gray48")
 
 Load the LA housing prices dataset:
 
-```{r message = FALSE,eval=FALSE}
+```{r}
 la.house.data = read.csv('https://raw.githubusercontent.com/vcoxon/HW5/master/input/LA.csv')
 
-#Find all the missing values for eaach variable.
-propmiss <- function(la.house.data)
-lapply(la.house.data,function(x)
-data.frame(nmiss=sum(is.na(x)), n=length(x), propmiss=sum(is.na(x))/length(x)))
-propmiss(la.house.data)
+#Find all the missing values for each variable.
+summary(la.house.data)
 ```
 
 (@) Fit the best model you can to predict housing prices in LA on the basis of theory (i.e., what should matter for house prices?) and model fit (i.e., DO NOT use stepwise regression, but feel free to add/subtract/transform variables as you feel are necessary).
@@ -249,11 +246,12 @@ la.house.data = read.csv('https://raw.githubusercontent.com/vcoxon/HW5/master/in
 #I know this looks stupid to re-import the data, but I was having problems knitting and this website offered a solution: http://stackoverflow.com/questions/32811527/error-in-evalexpr-envir-enclos-during-knit-in-r-markdown
 
 #Garage: need to recode NA to 0 
+#la.house.data
 la.house.data$garage = ifelse(is.na(la.house.data$garage),0,la.house.data$garage)  
 #When I was doing the homework I checked to see that the command was successful via  'la.house.data$garage'
 
 #Pool:"Y" = 1; 0 otherwise
-la.house.data$pool
+#la.house.data$pool
 la.house.data$pool = ifelse(la.house.data$pool=='Y',1,0)  
 #When I was doing the homework I checked to see that the command was successful via 'la.house.data$pool'
 ```
@@ -302,10 +300,11 @@ BIC(la.model1, la.model2, la.model3)
 
 (@) Demonstrate the goodness-of-fit of your model (i.e, show that key assumptions appear to be met and that the model would seem to be a viable basis for inference). 
 
-__Key Asssumptions__
--Residuals are 'iid'; identically & independently distributed (errors do no affect each other).
--Nothing about Beta1 affects Beta2, ..., or BetaK.
--Linear Realtionship
+__Key Asssumptions__  
+1. Linear Relationship  
+2. Residuals are 'iid'; identically & independently distributed (errors $\epsilon_i$ do not affect each other).  
+3. Nothing about $\beta_1$ affects $\beta_2$, ..., $\beta_k$.  
+
 
 ######Condition 1: Linearity
 ```{r}
@@ -337,8 +336,17 @@ summary(la.model3)
 ```
 
 *By taking the natural log of price, we assume that the dependent variable is linear in percentage terms. This means that the linear coefficients are most easily be interpreted by exponentiating the given coefficient to produce a multiplicative effect.* 
+*For instance, the eqquation would look like this:*
 
 $\log(price) = \beta_{0} + \beta_{1}*lgsqrt + \beta_{2}*[(-0.106)*bed] + \beta_{3}*[(0.047)*bath] + \beta_{4}*[(0.281)*pool] + \beta_{5}*[-1.146)*garage]$
+
+*The price of the house is affected by the following variables (holding all others constant):*
+
+1. Each additional 100(?) feet in square footage can increase the price by 1.445139 or 144%.  
+2. Each additional bedroom reduces the price for the same square footage by 10.6% (-0.105772).  
+3. Each additional bathroom increases the price for the same square footage by 4.6% (0.046606).  
+4. A pool can increase the prices of a house of equivalent square footage by 28% (0.280487).  
+5. Each additional garage bay reduces the price of the house with equivalent square footage by 14.6% (-0.146483).  
 
 (@) Discuss any potential shortcomings of this model and key future directions that you might take if you sought to better understand LA housing prices. 
 
@@ -348,9 +356,11 @@ $\log(price) = \beta_{0} + \beta_{1}*lgsqrt + \beta_{2}*[(-0.106)*bed] + \beta_{
 
 ### Problem 4.
 
-(@) Again, using the LA housing price data, fit a model that estimates sqrt(price) solely as a function of sqrt(square footage) using maximum likelihood estimation (MLE) (hint: you'll need to use the `mle` function from the `stats4` package). Recall that in a linear regression, we assume that the residuals are normally distributed, so for MLE in this case we want a likelihood function that fits a normal distribution to the residuals:
+(@) Again, using the LA housing price data, __fit a model that estimates sqrt(price) solely as a function of sqrt(square footage) using maximum likelihood estimation (MLE)__ (hint: you'll need to use the `mle` function from the `stats4` package).   
+Recall that in a linear regression, we assume that the residuals are normally distributed, so for MLE in this case we want a likelihood function that fits a normal distribution to the residuals:
 
 ```{r eval=FALSE}
+library(stats4)
 #Note: you'll need to edit this slightly to make it work for your data
 LL <- function(beta0, beta1, mu, sigma) {
     R = y - x * beta1 - beta0
@@ -360,12 +370,54 @@ LL <- function(beta0, beta1, mu, sigma) {
     -sum(R)
 }
 ```
+######Maximum Likelihood Estimation Approach
+```{r}
+LL <- function(beta0, beta1, mu, sigma) {
+    R = sqrt(la.house.data$price) - sqrt(la.house.data$sqft) * beta1 - beta0
+    #
+    R = suppressWarnings(dnorm(R, mu, sigma, log = TRUE))
+    #
+    -sum(R)
+}
+library(stats4)
+m.l.e. = mle(LL, start = list(beta0 = 10, beta1 = 10, sigma = 1), fixed = list(mu = 0), nobs = length(la.house.data$price))
+
+summary(m.l.e.)
+```
 
 (@) Try several different starting parameter values: How consistent are your results? Do your results typically match up with results from a simple linear regression? What do you think accounts for your results?
 
-(@) Perform the same analysis with but with the addition of a variable for number of bathrooms (i.e., $price ~ size + bathrooms$).
+######OLS Approach
+```{r}
+summary(lm(sqrt(price) ~ sqrt(sqft), data = la.house.data))
+```
 
+*A one-unit increase in the square root of SqFt is predicted to increase the square root of the house price by 37.78, while for the OLS model the same coefficient is 37.91.* 
+*The primary reason for the difference is that the MLE approach models the variance and provides an estimate for sigma; whereas the OLS approach does not.* 
+
+*Also, the better the model fit the better you’ll be able to estimate things. For instance, if you don’t transform sqft and price, the model performs more poorly.*
+
+(@) Perform the same analysis with but with the addition of a variable for number of bathrooms (i.e., $price = size + bathrooms$).
+```{r}
+LL2 <- function(beta0, beta1, beta2, mu, sigma) {
+    R = sqrt(la.house.data$price) - sqrt(la.house.data$sqft) * beta1 - beta0 - la.house.data$bath * beta2 
+    #
+    R = suppressWarnings(dnorm(R, mu, sigma, log = TRUE))
+    #
+    -sum(R)
+}
+library(stats4)
+m.l.e.2 = mle(LL2, start = list(beta0 = 10, beta1 = 10, beta2 = 10,sigma=1),
+             fixed = list(mu = 0),
+             nobs = length(la.house.data$price))
+
+summary(m.l.e.2)
+```
 (@) In NO MORE than 4-6 sentences, explain how maximum likelihood estimation works in the context of this problem (i.e, how might you briefly describe your modeling approach within the context of a journal article methods section?)
+
+*The general tactic in maximum likelihood estimation is to estimate a value for an unknown parameter (e.g., θ) that maximizes the probability of observing that data that are observed.*   
+*For the model above, this means that we identify estimates for* $\beta_0$, $\beta_1$, and $\beta_3$ *that maximize the likelihood function of observing the data we observe within the data set assuming that the error terms $\epsilon_i$ are normally distributed with mean 0.*  
+*In short, MLE maximizes the "agreement" of the selected model with the observed data.*
 
 ### Report your process
 

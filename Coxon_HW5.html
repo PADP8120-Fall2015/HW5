@@ -133,9 +133,9 @@ p.vals =<span class="st"> </span><span class="kw">round</span>(<span class="dv">
 
 <span class="kw">matrix.lm</span>(y,x.vars)</code></pre>
 <pre><code>##              coefs         SE    t.obs  p.vals
-## intercept  0.10588 0.09362966  1.13084 0.26091
-## x1        -0.01309 0.08882825 -0.14736 0.88315
-## x2        -0.11918 0.09386383 -1.26971 0.20723</code></pre>
+## intercept -0.02239 0.08916483 -0.25111 0.80226
+## x1         0.07770 0.09326857  0.83308 0.40685
+## x2         0.08895 0.09511473  0.93519 0.35201</code></pre>
 <pre class="sourceCode r"><code class="sourceCode r"><span class="kw">summary</span>(<span class="kw">lm</span>(y~x1+x2))</code></pre>
 <pre><code>## 
 ## Call:
@@ -143,17 +143,17 @@ p.vals =<span class="st"> </span><span class="kw">round</span>(<span class="dv">
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -1.77777 -0.66397  0.02465  0.39588  2.41881 
+## -2.41450 -0.58202  0.02969  0.63550  1.83316 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(&gt;|t|)
-## (Intercept)  0.10588    0.09363   1.131    0.261
-## x1          -0.01309    0.08883  -0.147    0.883
-## x2          -0.11918    0.09386  -1.270    0.207
+## (Intercept) -0.02239    0.08916  -0.251    0.802
+## x1           0.07770    0.09327   0.833    0.407
+## x2           0.08895    0.09511   0.935    0.352
 ## 
-## Residual standard error: 0.933 on 97 degrees of freedom
-## Multiple R-squared:  0.01671,    Adjusted R-squared:  -0.003565 
-## F-statistic: 0.8241 on 2 and 97 DF,  p-value: 0.4417</code></pre>
+## Residual standard error: 0.8906 on 97 degrees of freedom
+## Multiple R-squared:  0.0148, Adjusted R-squared:  -0.005512 
+## F-statistic: 0.7286 on 2 and 97 DF,  p-value: 0.4852</code></pre>
 </div>
 </div>
 <div id="problem-2." class="section level3">
@@ -391,11 +391,22 @@ lower.bound &lt;-<span class="st"> </span>inc.slopes -<span class="st"> </span><
 <p>Load the LA housing prices dataset:</p>
 <pre class="sourceCode r"><code class="sourceCode r">la.house.data =<span class="st"> </span><span class="kw">read.csv</span>(<span class="st">'https://raw.githubusercontent.com/vcoxon/HW5/master/input/LA.csv'</span>)
 
-<span class="co">#Find all the missing values for eaach variable.</span>
-propmiss &lt;-<span class="st"> </span>function(la.house.data)
-<span class="kw">lapply</span>(la.house.data,function(x)
-<span class="kw">data.frame</span>(<span class="dt">nmiss=</span><span class="kw">sum</span>(<span class="kw">is.na</span>(x)), <span class="dt">n=</span><span class="kw">length</span>(x), <span class="dt">propmiss=</span><span class="kw">sum</span>(<span class="kw">is.na</span>(x))/<span class="kw">length</span>(x)))
-<span class="kw">propmiss</span>(la.house.data)</code></pre>
+<span class="co">#Find all the missing values for each variable.</span>
+<span class="kw">summary</span>(la.house.data)</code></pre>
+<pre><code>##             city             type          bed              bath       
+##  Beverly Hills: 232            : 39   Min.   : 0.000   Min.   : 1.000  
+##  Long Beach   :1062   Condo/Twh:639   1st Qu.: 2.000   1st Qu.: 1.000  
+##  Santa Monica : 204   SFR      :916   Median : 3.000   Median : 2.000  
+##  Westwood     :  96                   Mean   : 2.755   Mean   : 2.444  
+##                                       3rd Qu.: 3.000   3rd Qu.: 3.000  
+##                                       Max.   :17.000   Max.   :30.000  
+##   garage         sqft       pool       spa              price         
+##      :388   Min.   :  403    :1448   Mode:logical   Min.   :  100000  
+##  1   :260   1st Qu.:  960   Y: 146   NA's:1594      1st Qu.:  275000  
+##  2   :666   Median : 1380                           Median :  488944  
+##  3   : 37   Mean   : 1963                           Mean   : 1254851  
+##  4+  :  6   3rd Qu.: 2078                           3rd Qu.:  988750  
+##  NA's:237   Max.   :28000                           Max.   :89950000</code></pre>
 <ol start="10" style="list-style-type: example">
 <li>Fit the best model you can to predict housing prices in LA on the basis of theory (i.e., what should matter for house prices?) and model fit (i.e., DO NOT use stepwise regression, but feel free to add/subtract/transform variables as you feel are necessary).</li>
 </ol>
@@ -406,60 +417,13 @@ propmiss &lt;-<span class="st"> </span>function(la.house.data)
 <span class="co">#I know this looks stupid to re-import the data, but I was having problems knitting and this website offered a solution: http://stackoverflow.com/questions/32811527/error-in-evalexpr-envir-enclos-during-knit-in-r-markdown</span>
 
 <span class="co">#Garage: need to recode NA to 0 </span>
+<span class="co">#la.house.data</span>
 la.house.data$garage =<span class="st"> </span><span class="kw">ifelse</span>(<span class="kw">is.na</span>(la.house.data$garage),<span class="dv">0</span>,la.house.data$garage)  
 <span class="co">#When I was doing the homework I checked to see that the command was successful via  'la.house.data$garage'</span>
 
 <span class="co">#Pool:&quot;Y&quot; = 1; 0 otherwise</span>
-la.house.data$pool</code></pre>
-<pre><code>##    [1]                                                                    
-##   [35]                                                                    
-##   [69]                                                                    
-##  [103]                                                                    
-##  [137]   Y                                                                
-##  [171]                                                                    
-##  [205]                                                                    
-##  [239]                                                                    
-##  [273]                                                                    
-##  [307]                                                                    
-##  [341]                                                                    
-##  [375]                                                                    
-##  [409]                                                                    
-##  [443]                                                                    
-##  [477]                                                                    
-##  [511]                                                                    
-##  [545]                                                           Y        
-##  [579]                           Y                                        
-##  [613]                                                                    
-##  [647]                                                                    
-##  [681]                                                             Y      
-##  [715]                                     Y                              
-##  [749]                                                                    
-##  [783]                                       Y                            
-##  [817]                                                                    
-##  [851]                                                                    
-##  [885]     Y                                                              
-##  [919]                                     Y                              
-##  [953]                                     Y                              
-##  [987]                                                                   Y
-## [1021]         Y                           Y   Y         Y                
-## [1055]                                                             Y      
-## [1089]     Y         Y     Y Y Y     Y                   Y Y              
-## [1123] Y   Y Y Y Y   Y Y Y Y Y       Y Y Y   Y   Y Y   Y           Y Y    
-## [1157] Y Y Y Y Y Y Y Y   Y     Y Y     Y Y             Y       Y Y     Y Y
-## [1191] Y   Y       Y   Y Y   Y Y Y Y Y Y   Y Y   Y Y   Y Y     Y       Y Y
-## [1225] Y   Y   Y Y   Y Y Y Y Y Y Y Y Y Y Y   Y Y Y   Y Y Y Y Y Y Y Y   Y Y
-## [1259] Y Y Y Y   Y Y Y Y   Y Y Y Y Y Y   Y   Y Y Y Y Y Y Y Y Y   Y Y Y Y  
-## [1293] Y Y                                                                
-## [1327]                                                                    
-## [1361]                                                                    
-## [1395]                                                                    
-## [1429]                                                   Y                
-## [1463]     Y                   Y     Y       Y     Y                   Y  
-## [1497]                                                                    
-## [1531]                                                                    
-## [1565]                                                     Y      
-## Levels:  Y</code></pre>
-<pre class="sourceCode r"><code class="sourceCode r">la.house.data$pool =<span class="st"> </span><span class="kw">ifelse</span>(la.house.data$pool==<span class="st">'Y'</span>,<span class="dv">1</span>,<span class="dv">0</span>)  
+<span class="co">#la.house.data$pool</span>
+la.house.data$pool =<span class="st"> </span><span class="kw">ifelse</span>(la.house.data$pool==<span class="st">'Y'</span>,<span class="dv">1</span>,<span class="dv">0</span>)  
 <span class="co">#When I was doing the homework I checked to see that the command was successful via 'la.house.data$pool'</span></code></pre>
 <p><em>Because I think the type of housing makes a huge difference in the price (perhaps an interaction variable somewhere?), I definitely need to deal with the 39 missing values for the categorical variable ‘type’.</em></p>
 <pre class="sourceCode r"><code class="sourceCode r"><span class="kw">tapply</span>(la.house.data$price, la.house.data$type, mean)</code></pre>
@@ -631,7 +595,7 @@ la.house.data$pool</code></pre>
 <ol start="11" style="list-style-type: example">
 <li>Demonstrate the goodness-of-fit of your model (i.e, show that key assumptions appear to be met and that the model would seem to be a viable basis for inference).</li>
 </ol>
-<p><strong>Key Asssumptions</strong> -Residuals are ‘iid’; identically &amp; independently distributed (errors do no affect each other). -Nothing about Beta1 affects Beta2, …, or BetaK. -Linear Realtionship</p>
+<p><strong>Key Asssumptions</strong><br />1. Linear Relationship<br />2. Residuals are ‘iid’; identically &amp; independently distributed (errors <span class="math">\(\epsilon_i\)</span> do not affect each other).<br />3. Nothing about <span class="math">\(\beta_1\)</span> affects <span class="math">\(\beta_2\)</span>, …, <span class="math">\(\beta_k\)</span>.</p>
 <div id="condition-1-linearity" class="section level6">
 <h6>Condition 1: Linearity</h6>
 <pre class="sourceCode r"><code class="sourceCode r"><span class="kw">par</span>(<span class="dt">mfrow =</span> <span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">1</span>)) <span class="co"># This sets the plot display back to one graph at a time.</span>
@@ -684,8 +648,16 @@ la.house.data$pool</code></pre>
 ## Residual standard error: 0.4419 on 1588 degrees of freedom
 ## Multiple R-squared:  0.8209, Adjusted R-squared:  0.8203 
 ## F-statistic:  1456 on 5 and 1588 DF,  p-value: &lt; 2.2e-16</code></pre>
-<p><em>By taking the natural log of price, we assume that the dependent variable is linear in percentage terms. This means that the linear coefficients are most easily be interpreted by exponentiating the given coefficient to produce a multiplicative effect.</em></p>
+<p><em>By taking the natural log of price, we assume that the dependent variable is linear in percentage terms. This means that the linear coefficients are most easily be interpreted by exponentiating the given coefficient to produce a multiplicative effect.</em> <em>For instance, the eqquation would look like this:</em></p>
 <p><span class="math">\(\log(price) = \beta_{0} + \beta_{1}*lgsqrt + \beta_{2}*[(-0.106)*bed] + \beta_{3}*[(0.047)*bath] + \beta_{4}*[(0.281)*pool] + \beta_{5}*[-1.146)*garage]\)</span></p>
+<p><em>The price of the house is affected by the following variables (holding all others constant):</em></p>
+<ol style="list-style-type: decimal">
+<li>Each additional 100(?) feet in square footage can increase the price by 1.445139 or 144%.<br /></li>
+<li>Each additional bedroom reduces the price for the same square footage by 10.6% (-0.105772).<br /></li>
+<li>Each additional bathroom increases the price for the same square footage by 4.6% (0.046606).<br /></li>
+<li>A pool can increase the prices of a house of equivalent square footage by 28% (0.280487).<br /></li>
+<li>Each additional garage bay reduces the price of the house with equivalent square footage by 14.6% (-0.146483).</li>
+</ol>
 <ol start="13" style="list-style-type: example">
 <li>Discuss any potential shortcomings of this model and key future directions that you might take if you sought to better understand LA housing prices.</li>
 </ol>
@@ -697,9 +669,10 @@ la.house.data$pool</code></pre>
 <div id="problem-4." class="section level3">
 <h3>Problem 4.</h3>
 <ol start="14" style="list-style-type: example">
-<li>Again, using the LA housing price data, fit a model that estimates sqrt(price) solely as a function of sqrt(square footage) using maximum likelihood estimation (MLE) (hint: you’ll need to use the <code>mle</code> function from the <code>stats4</code> package). Recall that in a linear regression, we assume that the residuals are normally distributed, so for MLE in this case we want a likelihood function that fits a normal distribution to the residuals:</li>
+<li>Again, using the LA housing price data, <strong>fit a model that estimates sqrt(price) solely as a function of sqrt(square footage) using maximum likelihood estimation (MLE)</strong> (hint: you’ll need to use the <code>mle</code> function from the <code>stats4</code> package).<br />Recall that in a linear regression, we assume that the residuals are normally distributed, so for MLE in this case we want a likelihood function that fits a normal distribution to the residuals:</li>
 </ol>
-<pre class="sourceCode r"><code class="sourceCode r"><span class="co">#Note: you'll need to edit this slightly to make it work for your data</span>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(stats4)
+<span class="co">#Note: you'll need to edit this slightly to make it work for your data</span>
 LL &lt;-<span class="st"> </span>function(beta0, beta1, mu, sigma) {
     R =<span class="st"> </span>y -<span class="st"> </span>x *<span class="st"> </span>beta1 -<span class="st"> </span>beta0
     <span class="co">#</span>
@@ -707,11 +680,94 @@ LL &lt;-<span class="st"> </span>function(beta0, beta1, mu, sigma) {
     <span class="co">#</span>
     -<span class="kw">sum</span>(R)
 }</code></pre>
+<div id="maximum-likelihood-estimation-approach" class="section level6">
+<h6>Maximum Likelihood Estimation Approach</h6>
+<pre class="sourceCode r"><code class="sourceCode r">LL &lt;-<span class="st"> </span>function(beta0, beta1, mu, sigma) {
+    R =<span class="st"> </span><span class="kw">sqrt</span>(la.house.data$price) -<span class="st"> </span><span class="kw">sqrt</span>(la.house.data$sqft) *<span class="st"> </span>beta1 -<span class="st"> </span>beta0
+    <span class="co">#</span>
+    R =<span class="st"> </span><span class="kw">suppressWarnings</span>(<span class="kw">dnorm</span>(R, mu, sigma, <span class="dt">log =</span> <span class="ot">TRUE</span>))
+    <span class="co">#</span>
+    -<span class="kw">sum</span>(R)
+}
+<span class="kw">library</span>(stats4)
+m.l.e. =<span class="st"> </span><span class="kw">mle</span>(LL, <span class="dt">start =</span> <span class="kw">list</span>(<span class="dt">beta0 =</span> <span class="dv">10</span>, <span class="dt">beta1 =</span> <span class="dv">10</span>, <span class="dt">sigma =</span> <span class="dv">1</span>), <span class="dt">fixed =</span> <span class="kw">list</span>(<span class="dt">mu =</span> <span class="dv">0</span>), <span class="dt">nobs =</span> <span class="kw">length</span>(la.house.data$price))
+
+<span class="kw">summary</span>(m.l.e.)</code></pre>
+<pre><code>## Maximum likelihood estimation
+## 
+## Call:
+## mle(minuslogl = LL, start = list(beta0 = 10, beta1 = 10, sigma = 1), 
+##     fixed = list(mu = 0), nobs = length(la.house.data$price))
+## 
+## Coefficients:
+##         Estimate Std. Error
+## beta0 -664.19649 20.3168904
+## beta1   37.78014  0.4585688
+## sigma  294.18669  5.3181959
+## 
+## -2 log L: 22602.31</code></pre>
 <ol start="15" style="list-style-type: example">
-<li><p>Try several different starting parameter values: How consistent are your results? Do your results typically match up with results from a simple linear regression? What do you think accounts for your results?</p></li>
-<li><p>Perform the same analysis with but with the addition of a variable for number of bathrooms (i.e., <span class="math">\(price ~ size + bathrooms\)</span>).</p></li>
-<li><p>In NO MORE than 4-6 sentences, explain how maximum likelihood estimation works in the context of this problem (i.e, how might you briefly describe your modeling approach within the context of a journal article methods section?)</p></li>
+<li>Try several different starting parameter values: How consistent are your results? Do your results typically match up with results from a simple linear regression? What do you think accounts for your results?</li>
 </ol>
+</div>
+<div id="ols-approach" class="section level6">
+<h6>OLS Approach</h6>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">summary</span>(<span class="kw">lm</span>(<span class="kw">sqrt</span>(price) ~<span class="st"> </span><span class="kw">sqrt</span>(sqft), <span class="dt">data =</span> la.house.data))</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = sqrt(price) ~ sqrt(sqft), data = la.house.data)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -1023.4  -141.8   -10.1   129.6  3811.9 
+## 
+## Coefficients:
+##              Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept) -670.9293    20.0532  -33.46   &lt;2e-16 ***
+## sqrt(sqft)    37.9079     0.4526   83.75   &lt;2e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 290.4 on 1592 degrees of freedom
+## Multiple R-squared:  0.815,  Adjusted R-squared:  0.8149 
+## F-statistic:  7014 on 1 and 1592 DF,  p-value: &lt; 2.2e-16</code></pre>
+<p><em>A one-unit increase in the square root of SqFt is predicted to increase the square root of the house price by 37.78, while for the OLS model the same coefficient is 37.91.</em> <em>The primary reason for the difference is that the MLE approach models the variance and provides an estimate for sigma; whereas the OLS approach does not.</em></p>
+<p><em>Also, the better the model fit the better you’ll be able to estimate things. For instance, if you don’t transform sqft and price, the model performs more poorly.</em></p>
+<ol start="16" style="list-style-type: example">
+<li>Perform the same analysis with but with the addition of a variable for number of bathrooms (i.e., <span class="math">\(price = size + bathrooms\)</span>).</li>
+</ol>
+<pre class="sourceCode r"><code class="sourceCode r">LL2 &lt;-<span class="st"> </span>function(beta0, beta1, beta2, mu, sigma) {
+    R =<span class="st"> </span><span class="kw">sqrt</span>(la.house.data$price) -<span class="st"> </span><span class="kw">sqrt</span>(la.house.data$sqft) *<span class="st"> </span>beta1 -<span class="st"> </span>beta0 -<span class="st"> </span>la.house.data$bath *<span class="st"> </span>beta2 
+    <span class="co">#</span>
+    R =<span class="st"> </span><span class="kw">suppressWarnings</span>(<span class="kw">dnorm</span>(R, mu, sigma, <span class="dt">log =</span> <span class="ot">TRUE</span>))
+    <span class="co">#</span>
+    -<span class="kw">sum</span>(R)
+}
+<span class="kw">library</span>(stats4)
+m.l.e<span class="fl">.2</span> =<span class="st"> </span><span class="kw">mle</span>(LL2, <span class="dt">start =</span> <span class="kw">list</span>(<span class="dt">beta0 =</span> <span class="dv">10</span>, <span class="dt">beta1 =</span> <span class="dv">10</span>, <span class="dt">beta2 =</span> <span class="dv">10</span>,<span class="dt">sigma=</span><span class="dv">1</span>),
+             <span class="dt">fixed =</span> <span class="kw">list</span>(<span class="dt">mu =</span> <span class="dv">0</span>),
+             <span class="dt">nobs =</span> <span class="kw">length</span>(la.house.data$price))
+
+<span class="kw">summary</span>(m.l.e<span class="fl">.2</span>)</code></pre>
+<pre><code>## Maximum likelihood estimation
+## 
+## Call:
+## mle(minuslogl = LL2, start = list(beta0 = 10, beta1 = 10, beta2 = 10, 
+##     sigma = 1), fixed = list(mu = 0), nobs = length(la.house.data$price))
+## 
+## Coefficients:
+##         Estimate Std. Error
+## beta0 -478.46095  25.136102
+## beta1   28.31646   1.036075
+## beta2   87.66738   9.469565
+## sigma  285.53310   5.057251
+## 
+## -2 log L: 22565.88</code></pre>
+<ol start="17" style="list-style-type: example">
+<li>In NO MORE than 4-6 sentences, explain how maximum likelihood estimation works in the context of this problem (i.e, how might you briefly describe your modeling approach within the context of a journal article methods section?)</li>
+</ol>
+<p><em>The general tactic in maximum likelihood estimation is to estimate a value for an unknown parameter (e.g., θ) that maximizes the probability of observing that data that are observed.</em><br /><em>For the model above, this means that we identify estimates for</em> <span class="math">\(\beta_0\)</span>, <span class="math">\(\beta_1\)</span>, and <span class="math">\(\beta_3\)</span> <em>that maximize the likelihood function of observing the data we observe within the data set assuming that the error terms <span class="math">\(\epsilon_i\)</span> are normally distributed with mean 0.</em><br /><em>In short, MLE maximizes the “agreement” of the selected model with the observed data.</em></p>
+</div>
 </div>
 <div id="report-your-process" class="section level3">
 <h3>Report your process</h3>
@@ -736,7 +792,8 @@ LL &lt;-<span class="st"> </span>function(beta0, beta1, mu, sigma) {
 ## [5] LC_TIME=English_United States.1252    
 ## 
 ## attached base packages:
-## [1] stats     graphics  grDevices utils     datasets  methods   base     
+## [1] stats4    stats     graphics  grDevices utils     datasets  methods  
+## [8] base     
 ## 
 ## other attached packages:
 ## [1] knitr_1.11     stargazer_5.2  car_2.1-1      ggthemes_2.2.1
