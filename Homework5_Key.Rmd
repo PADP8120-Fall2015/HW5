@@ -207,8 +207,9 @@ la.dat = read.csv('Input/LA.csv')
 My basic theoretical expectation is that the price of a house will be contingent on the size, number of bedrooms, number of bathrooms, and the number of garage bays. 
 
 ```{r}
-#if no garage, recode from NA to 0
-la.dat$garage = ifelse(is.na(la.dat$garage),0,la.dat$garage)
+#if no garage, recode from NA (and '') to 0; if 4+, recode to 4
+la.dat$garage = as.numeric(ifelse(is.na(la.dat$garage),0,ifelse(la.dat$garage=='',0,ifelse(as.character(la.dat$garage)=='4+',4,as.character(la.dat$garage)))))
+
 #recode pool: if "Y" --> 1, if " " --> 0
 la.dat$pool = ifelse(la.dat$pool=='Y',1,0)
 ```
