@@ -256,7 +256,7 @@ la.house.data$pool = ifelse(la.house.data$pool=='Y',1,0)
 #When I was doing the homework I checked to see that the command was successful via 'la.house.data$pool'
 ```
 
-*Because I think the type of housing makes a huge difference in the price (perhaps an interaction variable somewhere?), I definitely need to deal with the 39 missing values for the categorical variable 'type'.*
+*Because I think the type of housing makes a huge difference in the price (perhaps an interaction variable somewhere?), I definitely need to deal with the 39 unclasssified values for the categorical variable 'type'.*
 
 ```{r}
 tapply(la.house.data$price, la.house.data$type, mean)
@@ -287,16 +287,16 @@ library(stargazer); library(knitr)
 stargazer(la.model1,la.model2,la.model3,type = 'text', omit.stat = c("f", "rsq"), column.labels = c('Model 1', 'Model 2', 'Model 3'), model.names = F, model.numbers = F)
 ```
 
-*Model 1 regresses the log of price on the interaction term log of square footage * type (alternative, townhome/condo, sing family residence), bedrooms, bathrooms, if a house has a pool, and the number of garage bays.* 
+_Model 1 regresses the log of price on the interaction term log of square footage*(type) (alternative, townhome/condo, sing family residence), bedrooms, bathrooms, if a house has a pool, and the number of garage bays._ 
 
 *Model 2 removed the interaction between square footage and type. In Model 3, I removed type because it did not appear to be as significant a contributor to the price relative to the other variables.*
 
-*I need to test for goodness of fit*
+*I need to test for goodness of fit...*
 ```{r}
 anova(la.model1, la.model2, la.model3)
 BIC(la.model1, la.model2, la.model3)
 ```
-*Anova indicates that Model 3 is the "best" model. However, the BIC scores for the models that included 'type' appear to contradict my intrpetation that the interaction of type with square foootage (Model 1) or the addition of type (Model 2) did not add significantly to the predictive ability of the model.*
+*ANOVA indicates that Model 3 is the "best" model. However, the BIC scores for the models that included 'type' appear to contradict my intrpetation that the interaction of type with square foootage (Model 1) or the addition of type (Model 2) did not add significantly to the predictive ability of the model.*
 
 (@) Demonstrate the goodness-of-fit of your model (i.e, show that key assumptions appear to be met and that the model would seem to be a viable basis for inference). 
 

@@ -133,9 +133,9 @@ p.vals =<span class="st"> </span><span class="kw">round</span>(<span class="dv">
 
 <span class="kw">matrix.lm</span>(y,x.vars)</code></pre>
 <pre><code>##              coefs         SE    t.obs  p.vals
-## intercept -0.02239 0.08916483 -0.25111 0.80226
-## x1         0.07770 0.09326857  0.83308 0.40685
-## x2         0.08895 0.09511473  0.93519 0.35201</code></pre>
+## intercept -0.12678 0.09987294 -1.26941 0.20733
+## x1         0.32683 0.10198635  3.20464 0.00183
+## x2        -0.13109 0.09925210 -1.32078 0.18968</code></pre>
 <pre class="sourceCode r"><code class="sourceCode r"><span class="kw">summary</span>(<span class="kw">lm</span>(y~x1+x2))</code></pre>
 <pre><code>## 
 ## Call:
@@ -143,17 +143,19 @@ p.vals =<span class="st"> </span><span class="kw">round</span>(<span class="dv">
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -2.41450 -0.58202  0.02969  0.63550  1.83316 
+## -2.71803 -0.42675  0.03232  0.59516  2.56524 
 ## 
 ## Coefficients:
-##             Estimate Std. Error t value Pr(&gt;|t|)
-## (Intercept) -0.02239    0.08916  -0.251    0.802
-## x1           0.07770    0.09327   0.833    0.407
-## x2           0.08895    0.09511   0.935    0.352
+##             Estimate Std. Error t value Pr(&gt;|t|)   
+## (Intercept) -0.12678    0.09987  -1.269  0.20732   
+## x1           0.32683    0.10199   3.205  0.00183 **
+## x2          -0.13109    0.09925  -1.321  0.18968   
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.8906 on 97 degrees of freedom
-## Multiple R-squared:  0.0148, Adjusted R-squared:  -0.005512 
-## F-statistic: 0.7286 on 2 and 97 DF,  p-value: 0.4852</code></pre>
+## Residual standard error: 0.9827 on 97 degrees of freedom
+## Multiple R-squared:  0.1083, Adjusted R-squared:  0.08988 
+## F-statistic: 5.888 on 2 and 97 DF,  p-value: 0.003858</code></pre>
 </div>
 </div>
 <div id="problem-2." class="section level3">
@@ -425,7 +427,7 @@ la.house.data$garage =<span class="st"> </span><span class="kw">ifelse</span>(<s
 <span class="co">#la.house.data$pool</span>
 la.house.data$pool =<span class="st"> </span><span class="kw">ifelse</span>(la.house.data$pool==<span class="st">'Y'</span>,<span class="dv">1</span>,<span class="dv">0</span>)  
 <span class="co">#When I was doing the homework I checked to see that the command was successful via 'la.house.data$pool'</span></code></pre>
-<p><em>Because I think the type of housing makes a huge difference in the price (perhaps an interaction variable somewhere?), I definitely need to deal with the 39 missing values for the categorical variable ‘type’.</em></p>
+<p><em>Because I think the type of housing makes a huge difference in the price (perhaps an interaction variable somewhere?), I definitely need to deal with the 39 unclasssified values for the categorical variable ‘type’.</em></p>
 <pre class="sourceCode r"><code class="sourceCode r"><span class="kw">tapply</span>(la.house.data$price, la.house.data$type, mean)</code></pre>
 <pre><code>##           Condo/Twh       SFR 
 ##  366110.3  589851.0 1756593.3</code></pre>
@@ -571,9 +573,9 @@ la.house.data$pool =<span class="st"> </span><span class="kw">ifelse</span>(la.h
 ## Residual Std. Error     0.438 (df = 1584) 0.440 (df = 1586) 0.442 (df = 1588)
 ## =============================================================================
 ## Note:                                             *p&lt;0.1; **p&lt;0.05; ***p&lt;0.01</code></pre>
-<p><em>Model 1 regresses the log of price on the interaction term log of square footage </em> type (alternative, townhome/condo, sing family residence), bedrooms, bathrooms, if a house has a pool, and the number of garage bays.*</p>
+<p>_Model 1 regresses the log of price on the interaction term log of square footage*(type) (alternative, townhome/condo, sing family residence), bedrooms, bathrooms, if a house has a pool, and the number of garage bays._</p>
 <p><em>Model 2 removed the interaction between square footage and type. In Model 3, I removed type because it did not appear to be as significant a contributor to the price relative to the other variables.</em></p>
-<p><em>I need to test for goodness of fit</em></p>
+<p><em>I need to test for goodness of fit…</em></p>
 <pre class="sourceCode r"><code class="sourceCode r"><span class="kw">anova</span>(la.model1, la.model2, la.model3)</code></pre>
 <pre><code>## Analysis of Variance Table
 ## 
@@ -591,7 +593,7 @@ la.house.data$pool =<span class="st"> </span><span class="kw">ifelse</span>(la.h
 ## la.model1 11 1962.496
 ## la.model2  9 1963.042
 ## la.model3  7 1965.664</code></pre>
-<p><em>Anova indicates that Model 3 is the “best” model. However, the BIC scores for the models that included ‘type’ appear to contradict my intrpetation that the interaction of type with square foootage (Model 1) or the addition of type (Model 2) did not add significantly to the predictive ability of the model.</em></p>
+<p><em>ANOVA indicates that Model 3 is the “best” model. However, the BIC scores for the models that included ‘type’ appear to contradict my intrpetation that the interaction of type with square foootage (Model 1) or the addition of type (Model 2) did not add significantly to the predictive ability of the model.</em></p>
 <ol start="11" style="list-style-type: example">
 <li>Demonstrate the goodness-of-fit of your model (i.e, show that key assumptions appear to be met and that the model would seem to be a viable basis for inference).</li>
 </ol>
