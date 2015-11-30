@@ -229,8 +229,12 @@ Load the LA housing prices dataset:
 
 ```{r message = FALSE,eval=FALSE}
 la.house.data = read.csv('https://raw.githubusercontent.com/vcoxon/HW5/master/input/LA.csv')
+
 #Find all the missing values for eaach variable.
-sapply(la.house.data, function(x) sum(is.na(x)))
+propmiss <- function(la.house.data)
+lapply(la.house.data,function(x)
+data.frame(nmiss=sum(is.na(x)), n=length(x), propmiss=sum(is.na(x))/length(x)))
+propmiss(la.house.data)
 ```
 
 (@) Fit the best model you can to predict housing prices in LA on the basis of theory (i.e., what should matter for house prices?) and model fit (i.e., DO NOT use stepwise regression, but feel free to add/subtract/transform variables as you feel are necessary).
@@ -244,7 +248,6 @@ sapply(la.house.data, function(x) sum(is.na(x)))
 la.house.data = read.csv('https://raw.githubusercontent.com/vcoxon/HW5/master/input/LA.csv')
 #I know this looks stupid to re-import the data, but I was having problems knitting and this website offered a solution: http://stackoverflow.com/questions/32811527/error-in-evalexpr-envir-enclos-during-knit-in-r-markdown
 
-la.house.data$garage
 #Garage: need to recode NA to 0 
 la.house.data$garage = ifelse(is.na(la.house.data$garage),0,la.house.data$garage)  
 #When I was doing the homework I checked to see that the command was successful via  'la.house.data$garage'
@@ -301,29 +304,45 @@ BIC(la.model1, la.model2, la.model3)
 
 __Key Asssumptions__
 -Residuals are 'iid'; identically & independently distributed (errors do no affect each other).
--Nothing about Beta1 affects Beta2, ..., BetaK.
+-Nothing about Beta1 affects Beta2, ..., or BetaK.
 -Linear Realtionship
 
-*Let's test for iid residuals.*
+######Condition 1: Linearity
 ```{r}
 par(mfrow = c(1,1)) # This sets the plot display back to one graph at a time.
+plot(rstandard(la.model3))
+abline(h = 0, lty = 1, col = "firebrick1")
+abline(h= 2,lty=2, col = "orangered")
+abline(h=-2,lty=2, col = "orangered")
+```
+
+######Condition 2: Nearly Normal Residuals
+```{r}
 hist(la.model3$residuals, breaks = 100)
 #Q-Q Plot
 plot(la.model3,2)
 #Residual v. Fitted Plot
 plot(la.model3,1)
+```
+
+######Condition 3: Constant Variability
+```{r}
 #Residuals v. Leverage Plot w/Cook's Distance
 plot(la.model3,5)
 ```
 
-*
-
 (@) Interpret your substantive findings.
-*
+```{r}
+summary(la.model3)
+```
+
+*By taking the natural log of price, we assume that the dependent variable is linear in percentage terms. This means that the linear coefficients are most easily be interpreted by exponentiating the given coefficient to produce a multiplicative effect.* 
+
+$\log(price) = \beta_{0} + \beta_{1}*lgsqrt + \beta_{2}*[(-0.106)*bed] + \beta_{3}*[(0.047)*bath] + \beta_{4}*[(0.281)*pool] + \beta_{5}*[-1.146)*garage]$
 
 (@) Discuss any potential shortcomings of this model and key future directions that you might take if you sought to better understand LA housing prices. 
 
-*The most obvious shortcoming is that the data do not provide any geo-spatial information; it doesn't include a variable that can help to provide information by neighborhoods. Everyone knows that "location, location, location" drives housing prices, but there are different neighborhood location specfic attributes (quality of public schools, proximity to work/shopping, safety, walkability) that can contribute to or detract from from desireability expressed by the prices of the available housing stock within neighborhoods.* 
+*The most obvious shortcoming is that the data does not provide any geo-spatial information; it doesn't include a variable that can help to provide information by neighborhoods. Everyone knows that "location, location, location" drives housing prices, but there are different neighborhood location specfic attributes (quality of public schools, proximity to work/shopping, safety, walkability) that can contribute to or detract from from desireability expressed by the prices of the available housing stock within neighborhoods.* 
 
 *The data need to allow researchers to "drill down" to a finer grain so that we can better see the contributors to variations in housing prices by having a better reference point; comparable housing within a specific neighborhood area.*
 
