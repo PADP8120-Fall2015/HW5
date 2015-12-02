@@ -355,11 +355,11 @@ $\log(price) = \beta_{0} + \beta_{1}*lgsqrt + \beta_{2}*[(-0.106)*bed] + \beta_{
 
 *The price of the house is affected by the following variables (holding all others constant):*
 
-1. Each additional 1.40% increase in square footage can increase the price by 1.445139 or 1.45%.  
-2. Each additional bedroom reduces the price for the same square footage by 11.9% (-0.11950).  
-3. Each additional bathroom increases the price for the same square footage by 5.29% (0.05285).  
-4. A pool can increase the prices of a house of equivalent square footage by 27.4% (0.27418).  
-5. Each additional garage bay reduces the price of the house with equivalent square footage by apprximately 32 or 33% for a one or two car garage, although there are a range of values from the least 19.4% (garage3 -0.19386) to a maximum of 49.3% (garage4 -0.49312).  
+1. Each additional 1.40% increase in square footage can increase the log price by 1.445139 or 1.45%.  
+2. Each additional bedroom reduces the log price for the same square footage by 0.88% [exp(-0.11950)].  
+3. Each additional bathroom increases the log price for the same square footage by 1.05% [exp(0.05285)].  
+4. A pool can increase the log price of a house of equivalent square footage by 1.31% [exp(0.27418)].    
+5. Each additional garage bay reduces the log price of the house with equivalent square footage by approximately 0.72% [exp(-0.32384)] or 0.71% [exp(-0.33640)] for a two or one car garage, although there are a range of values including 0.82% [exp(-0.19386)] for garage3 to a 0.62% [exp(-0.49312)] for garage4.  
 
 (@) Discuss any potential shortcomings of this model and key future directions that you might take if you sought to better understand LA housing prices. 
 
