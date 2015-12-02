@@ -133,9 +133,9 @@ p.vals =<span class="st"> </span><span class="kw">round</span>(<span class="dv">
 
 <span class="kw">matrix.lm</span>(y,x.vars)</code></pre>
 <pre><code>##              coefs         SE    t.obs  p.vals
-## intercept  0.08227 0.09979891  0.82436 0.41176
-## x1        -0.14127 0.10440921 -1.35304 0.17919
-## x2         0.04562 0.09522987  0.47905 0.63298</code></pre>
+## intercept -0.01429 0.09560689 -0.14947 0.88149
+## x1         0.01471 0.09780488  0.15040 0.88076
+## x2        -0.10975 0.09682442 -1.13350 0.25980</code></pre>
 <pre class="sourceCode r"><code class="sourceCode r"><span class="kw">summary</span>(<span class="kw">lm</span>(y~x1+x2))</code></pre>
 <pre><code>## 
 ## Call:
@@ -143,17 +143,17 @@ p.vals =<span class="st"> </span><span class="kw">round</span>(<span class="dv">
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -2.35315 -0.68156 -0.05811  0.74675  2.40709 
+## -2.51468 -0.56331 -0.06929  0.71955  1.98427 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(&gt;|t|)
-## (Intercept)  0.08227    0.09980   0.824    0.412
-## x1          -0.14127    0.10441  -1.353    0.179
-## x2           0.04562    0.09523   0.479    0.633
+## (Intercept) -0.01429    0.09561  -0.149    0.882
+## x1           0.01471    0.09780   0.150    0.881
+## x2          -0.10975    0.09682  -1.134    0.260
 ## 
-## Residual standard error: 0.9958 on 97 degrees of freedom
-## Multiple R-squared:  0.02382,    Adjusted R-squared:  0.003697 
-## F-statistic: 1.184 on 2 and 97 DF,  p-value: 0.3105</code></pre>
+## Residual standard error: 0.9444 on 97 degrees of freedom
+## Multiple R-squared:  0.01394,    Adjusted R-squared:  -0.006394 
+## F-statistic: 0.6855 on 2 and 97 DF,  p-value: 0.5063</code></pre>
 </div>
 </div>
 <div id="problem-2." class="section level3">
@@ -688,9 +688,9 @@ la.house.data$pool =<span class="st"> </span><span class="kw">ifelse</span>(la.h
 <p><em>The price of the house is affected by the following variables (holding all others constant):</em></p>
 <ol style="list-style-type: decimal">
 <li>Each additional 1.40% increase in square footage can increase the price by 1.445139 or 1.45%.<br /></li>
-<li>Each additional bedroom reduces the price for the same square footage by 10.6% (-0.105772).<br /></li>
-<li>Each additional bathroom increases the price for the same square footage by 4.6% (0.046606).<br /></li>
-<li>A pool can increase the prices of a house of equivalent square footage by 28% (0.280487).<br /></li>
+<li>Each additional bedroom reduces the price for the same square footage by 11.9% (-0.11950).<br /></li>
+<li>Each additional bathroom increases the price for the same square footage by 5.29% (0.05285).<br /></li>
+<li>A pool can increase the prices of a house of equivalent square footage by 27.4% (0.27418).<br /></li>
 <li>Each additional garage bay reduces the price of the house with equivalent square footage by apprximately 32 or 33% for a one or two car garage, although there are a range of values from the least 19.4% (garage3 -0.19386) to a maximum of 49.3% (garage4 -0.49312).</li>
 </ol>
 <ol start="13" style="list-style-type: example">
