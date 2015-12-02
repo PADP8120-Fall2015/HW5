@@ -1,7 +1,7 @@
 
 ---
 title: "PADP8120_Homework5"
-author: "Fall 2015"
+author: "Emily Zier"
 date: "![Creative Commons Attribution License](images/cc-by.png)"
 output:
   html_document:
@@ -32,6 +32,31 @@ Topics covered in this homework include:
 ### Problem 1. 
 
 Just as you did for Homework 4, write a function that emulates the `lm` function in R for a simple (bivariate) regression. *However, this time your function needs to make use of the matrix regression approach we learned in Week 12.* Like the `lm` function, your function should be able to estimate and report to the screen $\beta_k$ coefficients, standard errors for these coefficients, and corresponding t-values and p-values. It should also report the residual standard error. Be sure to show your code. Compare your results to the results of the `lm` function on some data of your choosing to verify that things are working correctly. 
+
+```{r}
+sim.x1 = rnorm(100)
+sim.x2 = rnorm(100)
+sim.y = matrix(rnorm(100), ncol=1)
+x.vars = as.matrix(data.frame(intercept=1, sim.x1,sim.x2))
+
+matrix.lm = function(outcome.matrix,design.matrix)
+{
+betas = solve(t(design.matrix) %*% design.matrix) %*% t(design.matrix) %*% outcome.matrix
+betas = round(betas,3)
+dSigmaSq <- sum((outcome.matrix - design.matrix%*%betas)^2)/(nrow(design.matrix)-ncol(design.matrix))
+VarCovar <- dSigmaSq*chol2inv(chol(t(design.matrix)%*%design.matrix))
+vStdErr<- round(sqrt(diag(VarCovar)), 3)
+df=nrow(outcome.matrix) - length(betas)
+t.obs = round(betas/vStdErr,3)
+p.vals = round(2*(1-pt(abs(t.obs),df=df)),3)
+return(data.frame(coefs=betas, SE=vStdErr,t.obs =t.obs,p.vals=p.vals))
+}
+
+matrix.lm(sim.y,x.vars)
+
+summary(lm(sim.y~sim.x1+sim.x2))
+```
+
 
 ### Problem 2.
 

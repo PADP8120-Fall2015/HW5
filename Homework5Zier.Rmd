@@ -1,0 +1,327 @@
+
+---
+title: "PADP8120_Homework5"
+author: "Emily Zier"
+date: "![Creative Commons Attribution License](images/cc-by.png)"
+output:
+  html_document:
+    highlight: pygments
+    theme: cerulean
+widgets     : [mathjax]            # {mathjax, quiz, bootstrap}
+---
+
+
+# Homework 5
+
+Guidelines: Homeworks should be clear and legible, with answers clearly indicated and work shown. Homeworks will be given a minus, check, or check plus owing to completion and correctness. You are welcome to work with others but please submit your own work. Your homework must be produced in an R Markdown (.rmd) file submitted via github. If you are having trouble accomplishing this, please refer to the [guide](http://spia.uga.edu/faculty_pages/tyler.scott/teaching/PADP8120_Fall2015/Homeworks/submitting_homework.shtml). 
+
+
+This homework adapts materials from the work of Michael Lynch (http://spia.uga.edu/faculty_pages/mlynch/) and Matthew Salganik (http://www.princeton.edu/~mjs3/)
+
+## Topics
+
+Topics covered in this homework include:
+
+- Matrix regression 
+- Interactions and categorical variables
+- Transformations
+- Maximum Likelihood
+
+## Problems
+
+### Problem 1. 
+
+Just as you did for Homework 4, write a function that emulates the `lm` function in R for a simple (bivariate) regression. *However, this time your function needs to make use of the matrix regression approach we learned in Week 12.* Like the `lm` function, your function should be able to estimate and report to the screen $\beta_k$ coefficients, standard errors for these coefficients, and corresponding t-values and p-values. It should also report the residual standard error. Be sure to show your code. Compare your results to the results of the `lm` function on some data of your choosing to verify that things are working correctly. 
+
+```{r}
+sim.x1 = rnorm(100)
+sim.x2 = rnorm(100)
+sim.y = matrix(rnorm(100),ncol=1)
+x.vars = as.matrix(data.frame(intercept = 1,sim.x1,sim.x2))
+
+matrix.lm = function(outcome.matrix,design.matrix)
+{
+betas = solve(t(design.matrix) %*% design.matrix) %*% t(design.matrix) %*% outcome.matrix
+betas = round(betas,3)
+# estimate of sigma-squared
+dSigmaSq <- sum((outcome.matrix - design.matrix%*%betas)^2)/(nrow(design.matrix)-ncol(design.matrix))
+# variance covariance matrix
+VarCovar <- dSigmaSq*chol2inv(chol(t(design.matrix)%*%design.matrix)) 
+# coeff. est. standard errors  
+vStdErr <- round(sqrt(diag(VarCovar)),3)
+df = nrow(outcome.matrix) - length(betas)
+t.obs = round(betas/vStdErr,3)
+p.vals = round(2 * (1-pt(abs(t.obs),df=df)),3)
+return(data.frame(coefs = betas,SE = vStdErr,
+                  t.obs = t.obs,p.vals=p.vals))}
+
+matrix.lm(sim.y,x.vars)
+
+summary(lm(sim.y~sim.x1+sim.x2))
+```
+
+
+### Problem 2.
+
+#### Occupational prestige 
+
+Let's try to understand the relationship between typical education, income, job type, and occupation prestigue using the data from Duncan.  You can read the documentation [here](http://socserv.socsci.mcmaster.ca/jfox/Books/Applied-Regression-2E/datasets/Duncan.pdf)
+
+Here's some code to read in and clean the data.  And for the purposes of this assignment we are going to exclude professionals.  In other words, we are only concerned about white collar and blue collar occupations.  Again, notice that the unit here is occupations.
+
+```{r message=FALSE,warnings=FALSE}
+library(dplyr)
+occup <- read.table("input/Duncan.txt", header=TRUE)
+occup$state <- rownames(occup)
+rownames(occup) <- NULL
+occup <- filter(occup, type %in% c("wc", "bc"))
+head(occup)
+```
+
+1. Run a regression model to predict the prestige of an occupation based on the level of education of people in that occupation (measured by the percentage of people in the field who have graduated from high school in 1950).
+
+```{r}
+summary(mod1 <- lm(prestige~education,occup))
+
+# 2 Make a plot showing the data and the model that you fit.
+
+plot(presitge~education,data=occup)
+abline(reg=mod1)
+
+# 3 Now run a regression model to predict the prestige of an occupation based on the level of education of people in that occupation (measured by the percentage of people in the field who have graduated from high school in 1950) and the occupation type (blue collar/white collar).
+
+summary(mod2 <- lm(prestige~education+type,data=occup))
+
+# 4 Make a plot showing the data and the model that you fit
+
+
+plot(prestige~education,data=occup)
+abline(a=mod2$coef[1],b=mod2$coef[2],col='blue',lwd=3)
+abline(a=mod2$coef[1]+mod2$coef[3],b=mod2$coef[2],col='grey80',lwd=3)
+
+# 5 Now run a regression model to predict occupational prestige based on the level of education and occupation type where the relationship between education and occupational prestige is allowed to vary by occupation type.
+
+summary(mod3<-lm(prestige~education*type,data=occup))
+
+
+#6 Calculate predicted levels of prestige for white collar and blue collar jobs at various levels of income and report these predicted levels in a graph (no table needed). What have you learned about prestige thanks to the interactive variable?
+
+pred.vals = predict(mod3,newdata=data.frame(education=rep(seq(0,100,10),2),type=rep(c('wc','bc'),each=11)))
+
+plot(x=rep(seq(0,100,10),2),y=pred.vals,col=rep(c('grey80','blue'),each=11),pch=19,xlab='Education',ylab='Predicted Prestige')
+
+#I see that predicted prestige does not grow with education for white collar jobs as rapidly as it does for blue collar jobs. For blue collar jobs, education can have a much stronger positive effect on prestige, whereas for white collar jobs the prestige still grows with education, but minimally compared to blue collar jobs. 
+
+```
+7.
+
+How would you summarize the conclusions from three models above?
+
+For both types of jobs prestige grows with education. However, prestige for blue collar jobs increases by 1.01 units for every additional percent of workers with a degree whereas white collar jobs' prestige only increases by 0.38 units with a one percentage increase in workers with a degree. Model two shows the differences between blue collar and white collar, whereas model one is the best predicor just prestige based on education. 
+
+```{r}
+library(car)
+anova(mod1,mod2,mod3)
+```
+Wahoo! I know what I'm doing. An anova compares all of these models at once and this tells me that the type of job doesn't make a big difference for occupational prestige but rather the level of education the job requires does. 
+
+```{r}
+tapply(occup$education,occup$type,mean)
+```
+
+
+8. Now run a the following regression model: `lm(prestige ∼ income + education + income ∗ education)` and substantively describe the effects of the independent variables on the dependent variable. In other words, describe the relationships implied by the interactive terms. Does this interaction make sense to you? Why or why not? No table needed.
+
+```{r}
+summary(mod4 <- lm(prestige~income+education+income*education,occup))
+```
+
+This is saying for every increase in one unit of income there is a .738 + education*-.003 change in probability of prestige. so, income and prestige changes are conditional upon what the individual's education is. The samething happens for education -  for every one unit increase in education there is a .257 + income*-.0003 increase in probability of prestige. So education still has a positive impact but it is less impactful when your income is already at a high level. 
+
+However, when income and education are interacting the impact is only -.003 which is quite small. 
+
+
+9. Use calculus to identify the predicted impact of a one unit change in income on occupational prestige. Assess whether this impact is statistically distinct from zero. Remember that the variance for an estimated marginal effect $\frac{\partial \hat{y}}{\partial x} = \hat{\beta}_x + \hat{\beta}_{xz}*z$ where x and z are interacted independent variables, can be calculated by:
+
+
+$$ V(\frac{\partial \hat{y}}{\partial x}) = V(\hat{\beta}_x) + z^2 V(\hat{\beta}_{xz}) + 2z * Cov(\hat{\beta}_x,\hat{\beta}_{xz}) $$
+
+```{r}
+educ.sim = seq(1:100)
+bx = mod4$coef[2]
+bxz = mod4coef[4]
+inc.slopes = bx = bxz *educ.sim
+
+var.bx = vcov(mod4)[2,2]
+var.bxz = vcov(mod4)[4,4]
+cov.bx.bxz = vcov(mod4)[4,2]
+var.dy.dx = var.bx + educ.sim^2 * var.bxz + 2*educ.sim*cov.bx.bxz
+
+p.vals = 2 * (1-pt(abs(inc.slopes/sqrt(var.dy.dx)),df=nrow(occup)-length(mod4)))
+plot(p.vals~educ.sim,ylim=c(0,1),ylab='p-value',xlab='Education')
+abline(h=0.05,col='red',lty=2)
+```
+
+
+10.￼Because the marginal effect of x depends on values of z, you will need to assess whether the marginal effect is significant across a range of values of z.
+
+```{r}
+upper <- inc.slopes + 1.96*sqrt(var.dy.dx)
+lower <- inc.slopes - 1.96*sqrt(var.dy.dx)
+plot(educ.sim, inc.slopes , type = "l", lty = 1, xlab = "Level of Education", ylab = "Marginal Effect of Income",ylim=c(-1,1))
+points(educ.sim, upper, type = "l", lty = 2)
+points(educ.sim, lower, type = "l", lty = 2)
+points(educ.sim, rep(0, length(educ.sim)), type = "l", col = "gray")
+```
+
+### Problem 3.
+
+#### LA Housing Prices
+
+Load the LA housing prices dataset:
+
+```{r message = FALSE,eval=FALSE}
+la.dat = read.csv('Input/LA.csv')
+```
+
+
+```{r}
+la.dat$garage = as.numeric(ifelse(is.na(la.dat$garage),0,ifelse(la.dat$garage=='',0,ifelse(as.character(la.dat$garage)=='4+',4,as.character(la.dat$garage)))))
+
+#recode pool: if "Y" --> 1, if " " --> 0
+la.dat$pool = ifelse(la.dat$pool=='Y',1,0)
+
+tapply(la.dat$price,la.dat$type,mean)
+
+la.dat$type = ifelse(la.dat$type=='','Alternative',as.character(la.dat$type))
+
+par(mfrow=c(2,2))
+hist(la.dat$price,breaks=100)
+hist(la.dat$sqft,breaks=100)
+hist(log(la.dat$price),breaks=100,main='log(price)')
+hist(log(la.dat$sqft),breaks=100,main='log(price)')
+
+summary(la.mod1 <- lm(log(price) ~ log(sqft)*type + bed + bath + pool + garage,la.dat))
+
+
+summary(la.mod2 <- lm(log(price) ~ log(sqft) + type + bed + bath + pool + garage,la.dat))
+
+summary(la.mod3 <- lm(log(price) ~ log(sqft) + bed + bath + pool + garage,la.dat))
+
+library(stargazer);library(knitr)
+
+stargazer(la.mod1,la.mod2,la.mod3,type='text',omit.stat=c("f", "rsq"),
+          column.labels = c('M1',"M2","M3"),model.names = F,model.numbers = F)
+
+BIC(la.mod1,la.mod2,la.mod3)
+```
+
+12. Demonstrate the goodness-of-fit of your model (i.e, show that key assumptions appear to be  met and that the model would seem to be a viable basis for inference). 
+
+```{r}
+
+par(mfrow=c(1,1))
+hist(la.mod3$residuals,breaks=100)
+
+plot(la.mod3,2)
+
+plot(la.mod3,1)
+
+plot(la.mod3,5)
+```
+
+
+13. Interpret your substantive findings.
+
+```{r}
+summary(la.mod3)
+```
+
+14.Discuss any potential shortcomings of this model and key future directions that you might take if you sought to better understand LA housing prices. 
+
+
+### Problem 4.
+
+15. Again, using the LA housing price data, fit a model that estimates sqrt(price) solely as a function of sqrt(square footage) using maximum likelihood estimation (MLE) (hint: you'll need to use the `mle` function from the `stats4` package). Recall that in a linear regression, we assume that the residuals are normally distributed, so for MLE in this case we want a likelihood function that fits a normal distribution to the residuals:
+
+```{r eval=FALSE}
+#Note: you'll need to edit this slightly to make it work for your data
+LL <- function(beta0, beta1, mu, sigma) {
+    R = y - x * beta1 - beta0
+    #
+    R = suppressWarnings(dnorm(R, mu, sigma, log = TRUE))
+    #
+    -sum(R)
+}
+
+LL <- function(beta0, beta1, mu, sigma) {
+    R = sqrt(la.dat$price) - sqrt(la.dat$sqft) * beta1 - beta0
+    #
+    R = suppressWarnings(dnorm(R, mu, sigma, log = TRUE))
+    #
+    -sum(R)
+}
+library(stats4)
+ml.est = mle(LL, start = list(beta0 = 10, beta1 = 10, sigma=1),
+             fixed = list(mu = 0),
+             nobs = length(la.dat$price))
+
+summary(ml.est)
+```
+
+16. Try several different starting parameter values: How consistent are your results? Do your results typically match up with results from a simple linear regression? What do you think accounts for your results?
+
+```{r}
+summary(lm(sqrt(price)~sqrt(sqft),data = la.dat))
+```
+
+17. Perform the same analysis with but with the addition of a variable for number of bathrooms (i.e., $price ~ size + bathrooms$).
+
+```{r}
+LL2 <- function(beta0, beta1, beta2, mu, sigma) {
+    R = sqrt(la.dat$price) - 
+      la.dat$bath * beta2 - sqrt(la.dat$sqft) * beta1 - beta0
+    #
+    R = suppressWarnings(dnorm(R, mu, sigma, log = TRUE))
+    #
+    -sum(R)
+}
+library(stats4)
+ml.est2 = mle(LL2, start = list(beta0 = 10, beta1 = 10, beta2 = 10,sigma=1),
+             fixed = list(mu = 0),
+             nobs = length(la.dat$price))
+
+summary(ml.est2)
+```
+
+18. In NO MORE than 4-6 sentences, explain how maximum likelihood estimation works in the context of this problem (i.e, how might you briefly describe your modeling approach within the context of a journal article methods section?)
+......
+
+### Report your process
+
+You're encouraged to reflect on what was hard/easy, problems you solved, helpful tutorials you read, etc. Give credit to your sources, whether it's a blog post, a fellow student, an online tutorial, etc.
+
+### Rubric
+
+Minus: Didn't tackle at least 3 tasks. Or didn't make companion graphs. Didn't interpret anything but left it all to the "reader". Or more than one technical problem that is relatively easy to fix. It's hard to find the report in our repo.
+
+Check: Completed, but not fully accurate and/or readable. Requires a bit of detective work on my part to see what you did
+
+Check plus: Hits all the elements. No obvious mistakes. Pleasant to read. No heroic detective work required. Solid.
+
+
+
+#### The command below is helpful for debugging, please don't change it
+
+```{r echo=FALSE}
+sessionInfo()
+```
+
+
+
+
+
+
+
+
+
