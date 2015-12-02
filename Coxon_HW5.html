@@ -133,9 +133,9 @@ p.vals =<span class="st"> </span><span class="kw">round</span>(<span class="dv">
 
 <span class="kw">matrix.lm</span>(y,x.vars)</code></pre>
 <pre><code>##              coefs         SE    t.obs  p.vals
-## intercept -0.00798 0.07867993 -0.10142 0.91943
-## x1         0.03209 0.07456313  0.43037 0.66788
-## x2         0.08491 0.07319569  1.16004 0.24888</code></pre>
+## intercept  0.08227 0.09979891  0.82436 0.41176
+## x1        -0.14127 0.10440921 -1.35304 0.17919
+## x2         0.04562 0.09522987  0.47905 0.63298</code></pre>
 <pre class="sourceCode r"><code class="sourceCode r"><span class="kw">summary</span>(<span class="kw">lm</span>(y~x1+x2))</code></pre>
 <pre><code>## 
 ## Call:
@@ -143,17 +143,17 @@ p.vals =<span class="st"> </span><span class="kw">round</span>(<span class="dv">
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -2.11142 -0.55583 -0.03612  0.55594  2.06407 
+## -2.35315 -0.68156 -0.05811  0.74675  2.40709 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(&gt;|t|)
-## (Intercept) -0.00798    0.07868  -0.101    0.919
-## x1           0.03209    0.07456   0.430    0.668
-## x2           0.08491    0.07320   1.160    0.249
+## (Intercept)  0.08227    0.09980   0.824    0.412
+## x1          -0.14127    0.10441  -1.353    0.179
+## x2           0.04562    0.09523   0.479    0.633
 ## 
-## Residual standard error: 0.7867 on 97 degrees of freedom
-## Multiple R-squared:  0.01533,    Adjusted R-squared:  -0.004976 
-## F-statistic: 0.7549 on 2 and 97 DF,  p-value: 0.4728</code></pre>
+## Residual standard error: 0.9958 on 97 degrees of freedom
+## Multiple R-squared:  0.02382,    Adjusted R-squared:  0.003697 
+## F-statistic: 1.184 on 2 and 97 DF,  p-value: 0.3105</code></pre>
 </div>
 </div>
 <div id="problem-2." class="section level3">
@@ -683,15 +683,15 @@ la.house.data$pool =<span class="st"> </span><span class="kw">ifelse</span>(la.h
 ## Residual standard error: 0.4477 on 1585 degrees of freedom
 ## Multiple R-squared:  0.8165, Adjusted R-squared:  0.8156 
 ## F-statistic: 881.8 on 8 and 1585 DF,  p-value: &lt; 2.2e-16</code></pre>
-<p><em>By taking the natural log of price, we assume that the dependent variable is linear in percentage terms. This means that the linear coefficients are most easily be interpreted by exponentiating the given coefficient to produce a multiplicative effect.</em> <em>For instance, the eqquation would look like this:</em></p>
+<p><em>By taking the natural log of price, we assume that the dependent variable is linear in percentage terms. This means that the linear coefficients are most easily be interpreted by exponentiating the given coefficient to produce a multiplicative effect.</em> <em>For instance, the equation would look like this:</em></p>
 <p><span class="math">\(\log(price) = \beta_{0} + \beta_{1}*lgsqrt + \beta_{2}*[(-0.106)*bed] + \beta_{3}*[(0.047)*bath] + \beta_{4}*[(0.281)*pool] + \beta_{5}*[-1.146)*garage]\)</span></p>
 <p><em>The price of the house is affected by the following variables (holding all others constant):</em></p>
 <ol style="list-style-type: decimal">
-<li>Each additional 100(?) feet in square footage can increase the price by 1.445139 or 144%.<br /></li>
+<li>Each additional 1.40% increase in square footage can increase the price by 1.445139 or 1.45%.<br /></li>
 <li>Each additional bedroom reduces the price for the same square footage by 10.6% (-0.105772).<br /></li>
 <li>Each additional bathroom increases the price for the same square footage by 4.6% (0.046606).<br /></li>
 <li>A pool can increase the prices of a house of equivalent square footage by 28% (0.280487).<br /></li>
-<li>Each additional garage bay reduces the price of the house with equivalent square footage by 14.6% (-0.146483).</li>
+<li>Each additional garage bay reduces the price of the house with equivalent square footage by apprximately 32 or 33% for a one or two car garage, although there are a range of values from the least 19.4% (garage3 -0.19386) to a maximum of 49.3% (garage4 -0.49312).</li>
 </ol>
 <ol start="13" style="list-style-type: example">
 <li>Discuss any potential shortcomings of this model and key future directions that you might take if you sought to better understand LA housing prices.</li>
@@ -835,18 +835,18 @@ m.l.e<span class="fl">.2</span> =<span class="st"> </span><span class="kw">mle</
 ## [5] ggplot2_1.0.1  dplyr_0.4.3   
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] Rcpp_0.12.0        formatR_1.2        nloptr_1.0.4      
+##  [1] Rcpp_0.12.2        formatR_1.2.1      nloptr_1.0.4      
 ##  [4] plyr_1.8.3         tools_3.2.2        digest_0.6.8      
-##  [7] lme4_1.1-10        evaluate_0.7.2     gtable_0.1.2      
+##  [7] lme4_1.1-10        evaluate_0.8       gtable_0.1.2      
 ## [10] nlme_3.1-121       lattice_0.20-33    mgcv_1.8-7        
 ## [13] Matrix_1.2-2       DBI_0.3.1          yaml_2.1.13       
 ## [16] parallel_3.2.2     SparseM_1.7        proto_0.3-10      
 ## [19] stringr_1.0.0      MatrixModels_0.4-1 grid_3.2.2        
-## [22] nnet_7.3-10        R6_2.1.1           rmarkdown_0.8     
+## [22] nnet_7.3-10        R6_2.1.1           rmarkdown_0.8.1   
 ## [25] minqa_1.2.4        reshape2_1.4.1     magrittr_1.5      
 ## [28] scales_0.3.0       htmltools_0.2.6    MASS_7.3-45       
 ## [31] splines_3.2.2      assertthat_0.1     pbkrtest_0.4-2    
-## [34] colorspace_1.2-6   quantreg_5.19      stringi_0.5-5     
+## [34] colorspace_1.2-6   quantreg_5.19      stringi_1.0-1     
 ## [37] lazyeval_0.1.10    munsell_0.4.2</code></pre>
 </div>
 </div>
