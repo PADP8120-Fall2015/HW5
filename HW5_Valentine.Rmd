@@ -1,0 +1,387 @@
+---
+title: "PADP8120 Homework 5"
+author: "Thomas K. Valentine"
+date: "December 2, 2015"
+output:
+  html_document:
+    highlight: tango 
+    theme: united
+    
+widgets     : [mathjax]            # {mathjax, quiz, bootstrap}
+---
+
+# Problems
+
+## Problem 1. 
+
+###Just as you did for Homework 4, write a function that emulates the `lm` function in R for a simple (bivariate) regression. *However, this time your function needs to make use of the matrix regression approach we learned in Week 12.* Like the `lm` function, your function should be able to estimate and report to the screen $\beta_k$ coefficients, standard errors for these coefficients, and corresponding t-values and p-values. It should also report the residual standard error. Be sure to show your code. Compare your results to the results of the `lm` function on some data of your choosing to verify that things are working correctly. 
+
+```{r}
+x1 = rnorm(100)
+x2 = rnorm(100)
+y = matrix(rnorm(100),ncol=1)
+
+#First, we create the matrix.
+x.vars = as.matrix(data.frame(intercept = 1,x1,x2))
+
+#Then we estimate for coefficients.
+matrix.lm = function(outcome.matrix,design.matrix)
+{
+betas = solve(t(design.matrix) %*% design.matrix) %*% t(design.matrix) %*% outcome.matrix
+betas = round(betas,3)
+
+#Then, we estimate sigma-squared.
+dSigmaSq <- sum((outcome.matrix - design.matrix%*%betas)^2)/(nrow(design.matrix)-ncol(design.matrix))
+
+#We explore the variance covariance matrix
+VarCovar <- dSigmaSq*chol2inv(chol(t(design.matrix)%*%design.matrix)) 
+
+#and the coefficient of estimated standard errors  
+vStdErr <- round(sqrt(diag(VarCovar)),3)
+
+#We then establish the degrees of freedom and observe the t-score
+df = nrow(outcome.matrix) - length(betas)
+t.obs = round(betas/vStdErr,3)
+p.vals = round(2 * (1-pt(abs(t.obs),df=df)),3)
+return(data.frame(coefs = betas,SE = vStdErr,
+                  t.obs = t.obs,p.vals=p.vals))}
+
+matrix.lm(y,x.vars)
+
+summary(lm(y~x1+x2))
+```
+
+
+
+## Problem 2: Occupational prestige 
+
+###Let's try to understand the relationship between typical education, income, job type, and occupation prestigue using the data from Duncan.  You can read the documentation [here](http://socserv.socsci.mcmaster.ca/jfox/Books/Applied-Regression-2E/datasets/Duncan.pdf)
+
+###Here's some code to read in and clean the data.  And for the purposes of this assignment we are going to exclude professionals.  In other words, we are only concerned about white collar and blue collar occupations.  Again, notice that the unit here is occupations.
+
+```{r message=FALSE,warnings=FALSE}
+library(dplyr)
+#We create a new clean data set: occpn
+occpn <- read.table("input/Duncan.txt", header=TRUE)
+occpn$state <- rownames(occpn)
+rownames(occpn) <- NULL
+occpn <- filter(occpn, type %in% c("wc", "bc"))
+head(occpn)
+```
+
+###(a) Run a regression model to predict the prestige of an occupation based on the level of education of people in that occupation (measured by the percentage of people in the field who have graduated from high school in 1950).
+
+```{r}
+summary(mod1 <- lm(prestige~education,occpn))
+```
+
+
+###(b) Make a plot showing the data and the model that you fit.
+
+```{r}
+plot(prestige~education,data=occpn)
+abline(reg = mod1)
+```
+
+
+###(c) Now run a regression model to predict the prestige of an occupation based on the level of education of people in that occupation (measured by the percentage of people in the field who have graduated from high school in 1950) and the occupation type (blue collar/white collar).
+
+```{r}
+summary(mod2 <- lm(prestige~education+type,data=occpn))
+```
+
+
+###(d) Make a plot showing the data and the model that you fit.
+
+```{r}
+plot(prestige~education,data=occpn)
+abline(a=mod2$coef[1],b=mod2$coef[2],col='orange',lwd=3)
+abline(a=mod2$coef[1]+mod2$coef[3],b=mod2$coef[2],col='grey60',lwd=3)
+```
+
+###(e) Now run a regression model to predict occupational prestige based on the level of education and occupation type where the relationship between education and occupational prestige is allowed to vary by occupation type.
+
+```{r}
+summary(mod3 <- lm(prestige~education*type,data=occpn))
+```
+
+###(f) Calculate predicted levels of prestige for white collar and blue collar jobs at various levels of income and report these predicted levels in a graph (no table needed). What have you learned about prestige thanks to the interactive variable?
+
+```{r}
+pred.vals = predict(mod3,newdata = data.frame(
+  education=rep(seq(0,100,10),2),type=rep(c('wc','bc'),each=11)))
+
+plot(x=rep(seq(0,100,10),2),y=pred.vals,col=rep(c('grey60','orange'),each=11),pch=19,xlab='Education',ylab='Predicted Prestige')
+```
+
+###(g) How would you summarize the conclusions from three models above?
+* White collar workers who experience a 1 percent increase in education receive a .38 increase in occup. prestige, as opposed to the more dramatic 1.01 increase in occup prestige that a blue collar worker earns for the same 1 degree increse in education. 
+* There is a positive correlation between education level and occupational prestige for both type of workers. 
+* Each type of job has a seperate intercept, which indicates a different starting point in expected education for white and blue collar workers.
+* Model 1, which maps occup. prestige against education, fits best
+
+```{r}
+library(car)
+anova(mod1,mod2,mod3)
+```
+
+* When we subtract any initially required education for each type of job (the different intercepts) we see that there is little difference in white/blue collar jobs in terms of the relationship between ed. level and occup. prestige. We can confirm this with a means test.
+
+```{r}
+tapply(occpn$education,occpn$type,mean)
+```
+
+
+###(h) Now run a the following regression model: `lm(prestige ∼ income + education + income ∗ education)` and substantively describe the effects of the independent variables on the dependent variable. In other words, describe the relationships implied by the interactive terms. Does this interaction make sense to you? Why or why not? No table needed.
+
+```{r}
+summary(mod4 <- lm(prestige ~income+ education + income * education,occpn))
+```
+####Model 4 (a regression of occup. prestige on income, ed. level, interaction between income and ed. level) tells us the following:
+* A one unit change in income is predicted to produce .74 + .26(-.003) impact on occup. prestige.
+* The relationship between income and occup. prestige is conditional on education; When the level of education rises for a worker, the role of income on occup prestig. decreases.
+* The effect of a one unit increase of education on occup. prestige is .26 + .74(-.003). 
+* The relationship between education and occup. prestige is conditional on income; When the level of income rises for a worker, the role of education on occup prestig. decreases.
+* Education and income behave similarly, so they can considered substitutes. Therefore, we must reevaluate the necessity of using income(education) as the interaction term. We conduct an f-test to confirm that the better model is the restricted one. We fail to reject the null (that income(education) does not improve fit) because .5471 is greater than .05.
+
+```{r}
+testmod = lm(prestige~income+education,occpn)
+anova(testmod,mod4)
+```
+
+###(i) Use calculus to identify the predicted impact of a one unit change in income on occupational prestige. Assess whether this impact is statistically distinct from zero. Remember that the variance for an estimated marginal effect $\frac{\partial \hat{y}}{\partial x} = \hat{\beta}_x + \hat{\beta}_{xz}*z$ where x and z are interacted independent variables, can be calculated by:
+
+$$ V(\frac{\partial \hat{y}}{\partial x}) = V(\hat{\beta}_x) + z^2 V(\hat{\beta}_{xz}) + 2z * Cov(\hat{\beta}_x,\hat{\beta}_{xz}) $$
+
+```{r}
+#First, we calculate marginal effect for educational levels (educ = 1 to 100)
+educ = seq(1:100)
+beta_x = mod4$coef[2]
+beta_xz = mod4$coef[4]
+inc.slopes = beta_x + beta_xz * educ
+
+#Second, we calculate variance for the interaction term
+var.beta_x = vcov(mod4)[2,2]
+var.beta_xz = vcov(mod4)[4,4]
+cov.beta_x.beta_xz = vcov(mod4)[4,2]
+var.dy.dx = var.beta_x + educ^2 * var.beta_xz + 2*educ*cov.beta_x.beta_xz
+
+p.vals = 2 * (1-pt(abs(inc.slopes/sqrt(var.dy.dx)),df=nrow(occpn)-length(mod4)))
+plot(p.vals~educ,ylim=c(0,1),ylab='p-value',xlab='Education')
+abline(h=0.05,col='orange',lty=2)
+```
+
+We look at the p-value for each educational level, looking for the moment when the marginal impact becomes significant at the alpha = .05 level . In doing so, we observe that marginal impact of income is insignificant above sixty and is becomes significant for levels 60 and below.
+
+###(j) ￼Because the marginal effect of x depends on values of z, you will need to assess whether the marginal effect is significant across a range of values of z.
+
+```{r}
+upper <- inc.slopes + 1.96*sqrt(var.dy.dx)
+lower <- inc.slopes - 1.96*sqrt(var.dy.dx)
+plot(educ, inc.slopes , type = "l", lty = 1, xlab = "Educational Level", ylab = "Marginal Effect (of Income)",ylim=c(-1,1))
+points(educ, upper, type = "l", lty = 2)
+points(educ, lower, type = "l", lty = 2)
+points(educ, rep(0, length(educ)), type = "l", col = "gray")
+```
+
+When we look at educational levels below 60, the 95% confidence interval doesn't include 0, confirming the findings from part i.
+
+## Problem 3: LA Housing Prices
+
+###Load the LA housing prices dataset:
+
+```{r message = FALSE,eval=TRUE}
+la.dat = read.csv('Input/LA.csv')
+```
+
+###(a) Fit the best model you can to predict housing prices in LA on the basis of theory (i.e., what should matter for house prices?) and model fit (i.e., DO NOT use stepwise regression, but feel free to add/subtract/transform variables as you feel are necessary).
+
+####We will operate on the theory that house prices are conditional on the following variables: 
+* size
+* # of bedrooms
+* # of bathrooms
+* # of garages.
+
+```{r}
+#We have to recode the data all to numeric. NA and missing becomes 0; 4+ becomes 4
+la.dat$garage = as.numeric(ifelse(is.na(la.dat$garage),0,ifelse(la.dat$garage=='',0,ifelse(as.character(la.dat$garage)=='4+',4,as.character(la.dat$garage)))))
+
+#Pool exists as an Y or Blank variable. We recode Y to 1, Blank to 0.
+la.dat$pool = ifelse(la.dat$pool=='Y',1,0)
+```
+
+In additional to recoding those variables, this data set includes categorical factors (Types of Homes, etc). We can find 39 observations with missing values for these type, although we know in the past (such as the pool variable) that blank could have a set meeting. For this reason, we will assign these missing responses as if they were a set category. We also can feel confident that this idea of the missing representing a different category is sound because these 39 obserations have a different avg. value than the other types. We can confirm that here:
+
+```{r}
+tapply(la.dat$price,la.dat$type,mean)
+```
+
+In the Key, Tyler recodes these as "Alternative", to ensure that it comes first alphabetically and becomes the reference category. For the sake of practice, I will instead use the term, "AltType"
+
+```{r}
+la.dat$type = ifelse(la.dat$type=='','AltType',as.character(la.dat$type))
+```
+
+We take the natural log of price and square footage to reduce the current skew for our variables. 
+
+```{r}
+par(mfrow=c(2,2))
+hist(la.dat$price,breaks=100)
+hist(la.dat$sqft,breaks=100)
+hist(log(la.dat$price),breaks=100,main='log(price)')
+hist(log(la.dat$sqft),breaks=100,main='log(price)')
+```
+
+```{r}
+summary(la.mod1 <- lm(log(price) ~ log(sqft)*type + bed + bath + pool + garage,la.dat))
+summary(la.mod2 <- lm(log(price) ~ log(sqft) + type + bed + bath + pool + garage,la.dat))
+summary(la.mod3 <- lm(log(price) ~ log(sqft) + bed + bath + pool + garage,la.dat))
+```
+
+```{r}
+library(stargazer);library(knitr)
+stargazer(la.mod1,la.mod2,la.mod3,type='text',omit.stat=c("f", "rsq"),
+          column.labels = c('M1',"M2","M3"),model.names = F,model.numbers = F)
+```
+
+#Now we have two models:
+* Model 1 regresses log of price on log of square footage, # of bedrooms, # of bathrooms, pool, and garages. This model has an interaction term between the square footage and the home types since all square footage is not the same and it is likely that variable will interact differently with different home types.
+* Model 2 does not have this interaction between home type and square footage.
+* Model 3 does not include type.
+
+```{r}
+BIC(la.mod1,la.mod2,la.mod3)
+```
+
+####Here is what we can interpret:
+* Our BIC scores are very close and, when that occurs, we want the simplest model.
+* Model 3 has 4 less parameters
+* For parsimony-sake, we go with Model 3 (even though it has a slightly higher BIC)
+
+###(b) Demonstrate the goodness-of-fit of your model (i.e, show that key assumptions appear to be met and that the model would seem to be a viable basis for inference). 
+
+We see what seems to be a (largely) normal distribution here:
+```{r}
+par(mfrow=c(1,1))
+hist(la.mod3$residuals,breaks=100)
+```
+
+And also have favorable results in our q-q plot.
+```{r}
+plot(la.mod3,2)
+```
+
+Next we plot residual values against fitted values. Because the residuals appear to be randomly distributed around zero and the variance is constant at each of the price brackets, we again see these results as favorable.
+```{r}
+plot(la.mod3,1)
+```
+
+```{r}
+plot(la.mod3,5)
+```
+
+We plot standardized residuals against leverage, revealing no obvious issues. We observe some high-leverage issues, but no high influence issues. 
+
+###(c) Interpret your substantive findings.
+
+```{r}
+summary(la.mod3)
+```
+
+Conclusions:
+1. We log-transformed price, so we must exponetiate given coeff. to produce multiplicative effect.
+2. If we control for all other variables, addtl bedrooms decrease the price of a home $exp(-0.105)$= `r exp(-0.105)`. Each bedroom predicteds a price decrease of10% (holding all else equal). 
+3.This is clearly counterintuitive. After all, more bedrooms should be more desirable, right? However, we realize that we've controlled for house size through square footage, so we are adding additional bedrooms in houses of the same size. Each additional bedroom means less and less room for other desirable features.
+4. A 10% increase in square footage predicts a $1.10^{1.44}=$ `r round((1.10)^{1.44},2)` price increase.
+5. The presence of pools predicts a price increase of $exp(0.28)$ = `r exp(0.28)`
+6. Bathrooms predict a price increase of $exp(0.047)$ = `r exp(0.047)` 
+
+###(d) Discuss any potential shortcomings of this model and key future directions that you might take if you sought to better understand LA housing prices. 
+
+####Potential shortcomings
+* The data does not account for neighborhood, county, or other regional data that might tell us where the house is located.
+* This is problematic as you could build an incredibly nice house (With many of the measured features here) and if it was built in a undesirable area or if the area becomes undesirable, the price will not fit with the expectations that we have here.
+
+### Problem 4.
+
+###(a) Again, using the LA housing price data, fit a model that estimates sqrt(price) solely as a function of sqrt(square footage) using maximum likelihood estimation (MLE) (hint: you'll need to use the `mle` function from the `stats4` package). Recall that in a linear regression, we assume that the residuals are normally distributed, so for MLE in this case we want a likelihood function that fits a normal distribution to the residuals:
+
+```{r eval=FALSE}
+#Note: you'll need to edit this slightly to make it work for your data
+LL <- function(beta0, beta1, mu, sigma) {
+    R = y - x * beta1 - beta0
+    #
+    R = suppressWarnings(dnorm(R, mu, sigma, log = TRUE))
+    #
+    -sum(R)
+}
+```
+
+```{r}
+LL <- function(beta0, beta1, mu, sigma) {
+    R = sqrt(la.dat$price) - sqrt(la.dat$sqft) * beta1 - beta0
+    #
+    R = suppressWarnings(dnorm(R, mu, sigma, log = TRUE))
+    #
+    -sum(R)
+}
+library(stats4)
+ml.est = mle(LL, start = list(beta0 = 10, beta1 = 10, sigma=1),
+             fixed = list(mu = 0),
+             nobs = length(la.dat$price))
+
+summary(ml.est)
+```
+
+###(b) Try several different starting parameter values: How consistent are your results? Do your results typically match up with results from a simple linear regression? What do you think accounts for your results?
+
+```{r}
+summary(lm(sqrt(price)~sqrt(sqft),data = la.dat))
+```
+
+####Conclusions
+* A one-unit increase of $SqFt^{1/2} can be predicted to increase price by 37.78
+* OLS model predicts this coefficient to be 37.91
+* The results are not consistent.
+* MLE models variance, providing an estimate for sigma.
+
+###(c) Perform the same analysis with but with the addition of a variable for number of bathrooms (i.e., $price ~ size + bathrooms$).
+
+```{r}
+LL2 <- function(beta0, beta1, beta2, mu, sigma) {
+    R = sqrt(la.dat$price) - 
+      la.dat$bath * beta2 - sqrt(la.dat$sqft) * beta1 - beta0
+    #
+    R = suppressWarnings(dnorm(R, mu, sigma, log = TRUE))
+    #
+    -sum(R)
+}
+library(stats4)
+ml.est2 = mle(LL2, start = list(beta0 = 10, beta1 = 10, beta2 = 10,sigma=1),
+             fixed = list(mu = 0),
+             nobs = length(la.dat$price))
+
+summary(ml.est2)
+```
+
+###(d) In NO MORE than 4-6 sentences, explain how maximum likelihood estimation works in the context of this problem (i.e, how might you briefly describe your modeling approach within the context of a journal article methods section?)
+
+####Explanation
+* We use maximum liklihood when we need to determine the value for a paramater that a) we do not know b) that maximizes the probability of observing the data that we see. 
+* We are ultimately looking to use our existing data to determine the paramater that produced that same data. 
+* Here, want want to determine estimates for $\beta_0$, $\beta_1$, and $\beta_3$ that maximize the liklihood function. This will work properly if $\epsilon_i$ is distributed normally around mean 0.
+
+### Report your process
+
+####Here were my steps this week:
+1. Project Set-Up: Fork/Clone Repository; Start project in RStudio; Set Up Template, using Assignment Rmd File / Key / Past Midterm / Past Homeworks to remind me how everything should be laid out.
+2. Reviewed key to determine if I would need any special packages. Installed 'Stargazer'
+3. Integrated HW5 Key with my template. 
+4. 1st Attempt to Knit (I always do a Knit attempt before proceeding with work).
+5. Knit was successful. Proceeded working through HW5, using a combination of reviewing OpenStatistics, the Labs, the Key, and online resources (especially http://rmarkdown.rstudio.com/). This was the most challengin lab so far, and I was more reliant on the key than ever before. I'll admit that made me feel uneasy, but I worked diligently to review each course of action taken to try and ensure I understood the what and why as much as possible.
+
+#### The command below is helpful for debugging, please don't change it
+
+```{r echo=FALSE}
+sessionInfo()
+```
