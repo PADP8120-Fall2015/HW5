@@ -1,0 +1,546 @@
+<br>
+<br>
+<p style="text-align:center"><span style="font-size:22pt">
+**Homework 5**</span></p>
+<p style="text-align:right"><span style="font-size:16pt">
+*Youkyoung JEONG*</span></p>
+<p style="text-align:right"><span style="font-size:16pt">
+*11.27.2015*</span></p>
+<br>
+
+Guidelines: Homeworks should be clear and legible, with answers clearly indicated and work shown. Homeworks will be given a minus, check, or check plus owing to completion and correctness. You are welcome to work with others but please submit your own work. Your homework must be produced in an R Markdown (.rmd) file submitted via github. If you are having trouble accomplishing this, please refer to the [guide](http://spia.uga.edu/faculty_pages/tyler.scott/teaching/PADP8120_Fall2015/Homeworks/submitting_homework.shtml). 
+
+
+This homework adapts materials from the work of Michael Lynch (http://spia.uga.edu/faculty_pages/mlynch/) and Matthew Salganik (http://www.princeton.edu/~mjs3/)
+
+## Topics
+
+Topics covered in this homework include:
+
+- Matrix regression 
+- Interactions and categorical variables
+- Transformations
+- Maximum Likelihood
+
+## Problems
+
+### Problem 1. 
+
+Just as you did for Homework 4, write a function that emulates the `lm` function in R for a simple (bivariate) regression. *However, this time your function needs to make use of the matrix regression approach we learned in Week 12.* Like the `lm` function, your function should be able to estimate and report to the screen $\beta_k$ coefficients, standard errors for these coefficients, and corresponding t-values and p-values. It should also report the residual standard error. Be sure to show your code. Compare your results to the results of the `lm` function on some data of your choosing to verify that things are working correctly. 
+
+To use matrix regression approach, I used <code>gapminder</code> data. With this data, I would like to run a regression model to predict the life expectancy based on GDP per capita and years.
+
+```{r}
+#load gapminder.RData
+load("input/gapminder.RData")
+
+#Attach knitr
+library(knitr)
+
+#make matrix
+x <- cbind(1, gapminder$gdpPercap, gapminder$year)
+
+#coefficient estimates
+beta <- solve(t(x) %*% x) %*% t(x) %*% gapminder$lifeExp
+
+#estimates of sigma squared
+sigmasq <- sum((gapminder$lifeExp - x%*%beta)^2)/(nrow(x)-ncol(x))
+
+#variance-covariance matrix
+varcov <- sigmasq * chol2inv(chol(t(x)%*%x))
+
+#SE, t-values, p-values
+se <- sqrt(diag(varcov))
+tval <- beta/se
+pval <- 2*(1-pt(abs(tval),df=nrow(gapminder)-length(beta)))
+varname <- c("(Intercept)","gdpPercap","year")
+
+kable(data.frame(Variables=varname, Coefficients=beta, SE=se, t.value=tval, p.value=pval))
+
+
+#result of lm function
+summary(lm(lifeExp ~ gdpPercap + year, gapminder))
+```
+
+<p style="margin-left:40px">: The results above seem pretty similar. The p-values in matrix regression approach are a bit different from those of <code>lm</code> function, but this problem appears to happen because the p-values are too small.</p>
+
+
+### Problem 2.
+
+#### Occupational prestige 
+
+Let's try to understand the relationship between typical education, income, job type, and occupation prestigue using the data from Duncan.  You can read the documentation [here](http://socserv.socsci.mcmaster.ca/jfox/Books/Applied-Regression-2E/datasets/Duncan.pdf)
+
+Here's some code to read in and clean the data.  And for the purposes of this assignment we are going to exclude professionals.  In other words, we are only concerned about white collar and blue collar occupations.  Again, notice that the unit here is occupations.
+
+```{r message=FALSE,warnings=FALSE}
+library(dplyr)
+occup <- read.table("input/Duncan.txt", header=TRUE)
+occup$state <- rownames(occup)
+rownames(occup) <- NULL
+occup <- filter(occup, type %in% c("wc", "bc"))
+head(occup)
+```
+
+(@) Run a regression model to predict the prestige of an occupation based on the level of education of people in that occupation (measured by the percentage of people in the field who have graduated from high school in 1950).
+
+```{r}
+occup.edu <- lm(prestige ~ education, occup)
+summary(occup.edu)
+```
+
+
+(@) Make a plot showing the data and the model that you fit.
+```{r}
+#attach ggplot2
+library(ggplot2)
+
+ggplot(data=occup, aes(x = education, y = prestige)) +
+  geom_point() +
+  geom_smooth(method = 'lm',lwd=1) +
+  xlab("Education") + ylab("Prestige") +
+  ggtitle("Relationship between education and prestige") + theme_bw()
+```
+
+(@) Now run a regression model to predict the prestige of an occupation based on the level of education of people in that occupation (measured by the percentage of people in the field who have graduated from high school in 1950) and the occupation type (blue collar/white collar).
+
+```{r}
+occup.type <- lm(prestige ~ education + type, occup)
+summary(occup.type)
+```
+
+(@) Make a plot showing the data and the model that you fit.
+
+
+```{r}
+#attach broom
+library(broom)
+
+occup.type.t <- tidy(occup.type)
+
+int.bc <- as.numeric(filter(occup.type.t, term=="(Intercept)")%>%
+                       select(estimate))
+int.wc <- int.bc + as.numeric(filter(occup.type.t, term=="typewc")%>%
+                                select(estimate))
+slope <- as.numeric(filter(occup.type.t, term=="education")%>%
+                      select(estimate))
+
+ggplot(occup, aes(x=education, y=prestige, colour=type))+
+  geom_jitter()+
+  scale_color_manual(values=c("blue","dark grey"),
+                     name="Type of occupation",
+                     breaks=c("bc", "wc"),
+                     labels=c("Blue-collar", "White-collar"))+
+  geom_abline(intercept=int.bc, slope=slope, colour="blue", size=1)+
+  geom_abline(intercept=int.wc, slope=slope, colour="dark grey", size=1)+
+  theme_bw()+
+  ggtitle("Relationship between education and prestige by occupation")
+```
+
+
+(@) Now run a regression model to predict occupational prestige based on the level of education and occupation type where the relationship between education and occupational prestige is allowed to vary by occupation type.
+
+```{r}
+occup.type2 <- lm(prestige ~ education*type, occup)
+summary(occup.type2)
+```
+
+(@) Calculate predicted levels of prestige for white collar and blue collar jobs at various levels of income and report these predicted levels in a graph (no table needed). What have you learned about prestige thanks to the interactive variable?
+
+```{r}
+pred <- predict(occup.type2,
+                newdata = data.frame(education=rep(seq(0,100,5),2),
+                                     type=rep(c('wc','bc'),each=21)))
+
+plot(x = rep(seq(0,100,5),2), y = pred, 
+     col=rep(c("dark grey","blue"),each=21), pch=18,
+     xlab = "Education",ylab = "Predicted Prestige",
+     main = "Predicted prestige based on education")
+```
+
+(@) How would you summarize the conclusions from three models above?
+
+```{r}
+library(car)
+anova(occup.edu, occup.type, occup.type2)
+```
+
+<p style="margin-left:40px">: According to the first model, there seems to be a positive relationship between education and occupational prestige. Especially, according to the third model, the prestige of blue-collar job increased by 1.011 percentage point with every increase in one unit of education, while the prestige of white-collar job increased by 0.379 percentage point. However, it is hard to say that there is a difference in prestige based on the type of occupation, in that no variables related to the type of occupation were not statistically significant in the second and third model. Also, according to ANOVA, there is no statistically significant difference among three models. THus, we can conclude that the first model predicted the relationship between occupational prestige and education better than other models, since it predicts the relationship between prestige and education as well as other models, but much more simple than others.</p>
+
+(@) Now run a the following regression model: `lm(prestige ∼ income + education + income ∗ education)` and substantively describe the effects of the independent variables on the dependent variable. In other words, describe the relationships implied by the interactive terms. Does this interaction make sense to you? Why or why not? No table needed.
+
+```{r}
+#Model with interaction variable
+occup.inc <- lm(prestige ~ income + education + income*education, occup)
+summary(occup.inc)
+
+#Limited model
+occup.inc.lim <- lm(prestige ~ income + education, occup)
+
+#compare the fit of two models
+BIC(occup.inc, occup.inc.lim)
+anova(occup.inc, occup.inc.lim)
+```
+
+<p style="margin-left:40px">: According to model <code>occup.inc</code>, we can predict that one unit change in income will affect the occupational prestige by $0.74-0.003education$ unit. On the other side, it is predicted that one unit change in education can affect the occupational prestige to be changed by $0.26-0.003education$ unit. Considering that the estimated coefficient of the interaction term is small, we can assume that it cannot make the marginal effect of income and education on prestige negative. Thus, we can assume that the one who has high occupational change also received high level of educatino and high income. However, it should be considered that the interactive term is not much significant in predicting the prestige. As seen above, there is not much difference in BIC score between restricted and full model, and the ANOVA shows that we cannot reject the null hypothesis that there is difference between two model. Thus, we can say that the restricted model is better than full model, with less variables. </p>
+
+
+(@) Use calculus to identify the predicted impact of a one unit change in income on occupational prestige. Assess whether this impact is statistically distinct from zero. Remember that the variance for an estimated marginal effect $\frac{\partial \hat{y}}{\partial x} = \hat{\beta}_x + \hat{\beta}_{xz}*z$ where x and z are interacted independent variables, can be calculated by:
+
+$$ V(\frac{\partial \hat{y}}{\partial x}) = V(\hat{\beta}_x) + z^2 V(\hat{\beta}_{xz}) + 2z * Cov(\hat{\beta}_x,\hat{\beta}_{xz}) $$
+
+<p style="margin-left:40px">: The hypotheses to assess whether the impact of income is statistically significant are as below:</p>
+
+$$H_{0}:\ \hat{\beta}_{x}+\hat{\beta}_{xz}*z=0$$
+$$H_{A}:\ \hat{\beta}_{x}+\hat{\beta}_{xz}*z\neq 0$$
+
+<p style="margin-left:40px">: To test this hypothesis for regression slope, I will use t-test. For this, we need t-value and degree of freedom. In general, t-value of $\beta_{1}$ and degree of freedom can be calculated as below:</p>
+
+$$t = \beta/SE,\ DF=n-k-1$$
+$$(k=number\ of\ independent\ variables)$$
+
+<p style="margin-left:40px">: Thus, we need to calculate variance and the slope to find out t-value of the marginal effect.</p>
+
+```{r}
+#Marginal effect of income
+z <- seq(0,100,2)
+bx <- occup.inc$coefficients[2]
+bxz <- occup.inc$coefficients[4]
+mar.eff <- bx + bxz*z
+
+#Variance of marginal effect
+v.bx <- vcov(occup.inc)[2,2]
+v.bxz <- vcov(occup.inc)[4,4]
+cov.bx.bxz <- vcov(occup.inc)[2,4]
+v.mar.eff <- v.bx + z^2*v.bxz + 2*z*cov.bx.bxz
+
+#t-value and p-value of marginal effect
+t.val <- abs(mar.eff)/sqrt(v.mar.eff)
+p.val <- 2 * (1-pt(t.val, df=nrow(occup)-3-1))
+
+#plot p-value based on simulated education levels
+plot(p.val ~ z, xlab="Education(simulated)", ylab="p-value")
+abline(h = 0.05, col="red")
+```
+
+<p style="margin-left:40px">: Plotting p-value of each education level, we can find out that p-values are above 0.05 when the level of education is above 60. Thus, if the level of education is higher than 60, the marginal effect of income is not statistically significant at the level of 0.05.</p>
+
+(@) ￼Because the marginal effect of x depends on values of z, you will need to assess whether the marginal effect is significant across a range of values of z.
+
+```{r}
+upper <- mar.eff + 1.96*sqrt(v.mar.eff)
+lower <- mar.eff - 1.96*sqrt(v.mar.eff)
+plot(z, mar.eff , type = "l", ylim = c(-1, 1), xlab = "Education", ylab = "Marginal effect of income")
+points(z, upper, type = "l", lty=2, col="red")
+points(z, lower, type = "l", lty=2, col="red")
+abline(h=0, col = "dark grey")
+```
+
+<p style="margin-left:40px">: As above, the 95% confidence interval includes 0 when the education is above 60. Therefore, this graph underpins the result in problem 2.9. </p>
+
+### Problem 3.
+
+#### LA Housing Prices
+
+Load the LA housing prices dataset:
+
+```{r}
+la.dat = read.csv('Input/LA.csv')
+```
+
+(@) Fit the best model you can to predict housing prices in LA on the basis of theory (i.e., what should matter for house prices?) and model fit (i.e., DO NOT use stepwise regression, but feel free to add/subtract/transform variables as you feel are necessary).
+
+<p style="margin-left:40px">: I expect that the price of a house is affected by its size, number of bedrooms, and number of bathrooms. Before testing regression models, I cleaned the data. First of all, I dealt with <code>NA</code> or omitted values in <code>type</code>, <code>pool</code>, <code>garage</code>.</p>
+
+```{r}
+#deal with NA
+
+la.dat$type <- ifelse(la.dat$type=="", "Alternative", as.character(la.dat$type))
+
+la.dat$pool <- as.factor(ifelse(la.dat$pool=="Y",1,0))
+
+la.dat$garage <- ifelse(la.dat$garage=="",0,as.character(la.dat$garage))
+la.dat$garage <- ifelse(is.na(la.dat$garage),0,as.character(la.dat$garage))
+
+#convert 4+(character) to 4(number)
+la.dat$garage <- as.integer(ifelse(la.dat$garage=="4+",4,la.dat$garage))
+
+str(la.dat)
+```
+
+<p style="margin-left:40px">: Also, as seen below, the distribution of <code>price</code> and <code>sqft</code> are pretty skewed. Thus, I added new variables as log transforming <code>price</code> and <code>sqft</code>. With log transformation, the distribution of variables became similar to the normal distribution.</p>
+
+```{r}
+la.dat$price.log <- log(la.dat$price)
+la.dat$sqft.log <- log(la.dat$sqft)
+par(mfrow=c(2,2))
+hist(la.dat$price, breaks=50);hist(la.dat$sqft, breaks=50)
+hist(la.dat$sqft.log, breaks=50);hist(la.dat$sqft.log, breaks=50)
+```
+
+<p style="margin-left:40px">: Based on the cleaned dataset, I made four different models as below.</p>
+
+$$Model\ 1:\ Price.log=\beta_{0}+\beta_{1}sqft.log + \beta_{2}bed + \beta_{3}bath+\epsilon$$
+
+```{r}
+#Basic assumption
+la.lm.1 <- lm(price.log ~ sqft.log + bed + bath, la.dat)
+summary(la.lm.1)
+```
+
+$$Model\ 2:\ Price.log=\beta_{0}+\beta_{1}sqft.log + \beta_{2}type + \beta_{3}sqft.log*type + \beta_{4}bed + \beta_{5}bath+\epsilon$$
+
+```{r}
+#use interaction term
+la.lm.2 <- lm(price.log ~ sqft.log*type + bed + bath, la.dat)
+summary(la.lm.2)
+```
+
+$$Model\ 3:\ Price.log=\beta_{0}+\beta_{1}sqft.log + \beta_{2}bed + \beta_{3}bath+\beta_{4}garage+\epsilon$$
+
+```{r}
+#add garage
+la.lm.3 <- lm(price.log ~ sqft.log + bed + bath + garage, la.dat)
+summary(la.lm.3)
+```
+
+$$Model\ 4:\ Price.log=\beta_{0}+\beta_{1}sqft.log + \beta_{2}bed + \beta_{3}bath+\beta_{4}garage+\beta_{5}pool+\epsilon$$
+
+```{r}
+#add pool
+la.lm.4 <- lm(price.log ~ sqft.log + bed + bath + garage + pool, la.dat)
+summary(la.lm.4)
+```
+
+
+```{r results='asis'}
+#attach stargazer
+library(stargazer)
+
+stargazer(la.lm.1, la.lm.2, la.lm.3, la.lm.4, type="html",
+          intercept.bottom = F, title="Result of five models",
+          dep.var.labels = "Price of house(log)",
+          covariate.labels = c("Square ft.(log)", "Type(Condo/Twh)",
+                               "Type(SFR)", "Bedroom", "Bathroom",
+                               "Sqft(log):Type(Condo/Twh)",
+                               "Sqft(log):Type(SFR)", "Garage", "Pool",
+                               "Constant"))
+```
+
+<p style="margin-left:40px">: As above, every independent variable is statistically significant at the level of 0.1, at least. Besides, I used BIC to find out the best model.</p>
+
+```{r}
+BIC(la.lm.1, la.lm.2, la.lm.3, la.lm.4)
+AIC(la.lm.1, la.lm.2, la.lm.3, la.lm.4)
+```
+
+<p style="margin-left:40px">: As above, Model 4 has the least AIC and BIC score at the same time. Thus, We can conclude that Model 4 is the best choice among four models. </p> 
+
+(@) Demonstrate the goodness-of-fit of your model (i.e, show that key assumptions appear to be met and that the model would seem to be a viable basis for inference). 
+
+<p style="margin-left:40px">First of all, the error term of the model needs to be normally distributed with mean zero. Thus, I used QQ plot and density plot to find out the distribution of the error term.</p>
+
+```{r}
+par(mfrow=c(1,2))
+plot(la.lm.4, 2)
+plot(density(la.lm.4$res), main="Density plot of residuals", col="red", lwd=2)
+```
+
+<p style="margin-left:40px">: It seems that the residuals are normally distributed and align along the identify line in QQ plot considerably. Thus, we can say that the model satisfies the first assumption.</p>
+
+<p style="margin-left:40px">Second, the error term should not be correlated with each other. To find out whether there is a sereal correlation, I used Durbin-Watson test.</p>
+
+```{r}
+durbinWatsonTest(la.lm.4)
+```
+
+<p style="margin-left:40px">: Since the p-value of Durbin-Watson test is 0, we can reject the hypothesis that there is autocorrelation. </p>
+
+<p style="margin-left:40px">Third, the error term of the model should have a constant variance. To diagnose heteroscedasticity, I used the scale location plot.</p>
+
+```{r}
+par(mfrow=c(1,1))
+plot(la.lm.4, 3)
+```
+
+<p style="margin-left:40px">: As the diagnostic line is pretty flat, it can be said that the residuals have constant variance. Also, this flat line refers to the linear trend of the model, which is also one of the assumption of regression model.</p>
+
+<p style="margin-left:40px">Fourth, I tested multicollinearity by using VIF.</p>
+
+```{r}
+vif(la.lm.4)
+```
+
+<p style="margin-left:40px">: Since the VIF values of all variable do not exceed 10, it can be said there are no significant multicollinearity in this model.</p>
+
+<p style="margin-left:40px">Finally, I tested whether there is any leverage or influential point with residuals vs leverage plot.</p>
+
+```{r}
+plot(la.lm.4, 5)
+```
+
+<p style="margin-left:40px">: The plot above shows that there are several leverage points, such as 1294. However, since their Cook's distances are not that high, we can say that the points do not have much influence on the estimates of the model. </p>
+
+(@) Interpret your substantive findings.
+
+```{r}
+summary(la.lm.4)
+data.frame(exp(la.lm.4$coefficients))
+```
+
+<p style="margin-left:40px">: Since I log transformed <code>sqft</code> and <code>price</code>, the model needs to be interpreted different from ordinary regression models. For variables that are not log transformed, the coefficient should be exponentiated. In other words, exponentiated coefficient of an independent variable  the expected percent increase in dependent variable per one unit increase in dependent variable. In other words, the price of house decreases by 11% with every additional bedroom, and by 13% with every additional garage. However, it increases by 5% with every additional bathroom. Also, the price of the house with pool is expected to be 30% greater than that of houses without pool.<br>
+On the other hand, independent variable <code>sqft</code> has been log transformed as dependent variable. If $x_{1i}$ and $x_{1j}$ are certain values from $X_{1}$ and $y_{i}$ and $y_{j}$ are from $Y$, we can find out the $X_{1}$ and $Y$ as below: </p>
+
+$$lny_{i}-lny_{j}=\beta_{1}*lnx_{1i}-\beta_{1}*lnx_{1j}$$
+$$\Leftrightarrow ln(y_{i}/lny_{j})=\beta_{1}*ln(x_{1i}/lnx_{1j})$$
+$$\Leftrightarrow ln(y_{i}/lny_{j})=ln(x_{1i}/lnx_{1j})^{\beta_{1}}$$
+$$\therefore y_{i}/lny_{j}=(x_{1i}/lnx_{1j})^{\beta_{1}}$$
+
+<p style="margin-left:40px"> Thus, the change in the ratio of the price can be calculated by raising the change in the ratio of the square feet to $\beta_{1}^{th}$ power. In other words, if there is a 10% change in the square feet of a house, we can predict that there is 15% increase in the price of the house by following equation: $1.10^{1.46}=1.15$ </p>
+
+(@) Discuss any potential shortcomings of this model and key future directions that you might take if you sought to better understand LA housing prices. 
+
+<p style="margin-left:40px">: Considering that the price of house is affected much by the location or surrounding environment, the model without these variables might be imperfect. For example, even if there are exactly same house with same number of bedroom, bathroom, garage, and pool, their prices can be differenciated when one is in New York and the other is in Athens. Thus, the regional factor, such as population or average income, can be added to the model above to predict the price of house better.</p>
+
+### Problem 4.
+
+(@) Again, using the LA housing price data, fit a model that estimates sqrt(price) solely as a function of sqrt(square footage) using maximum likelihood estimation (MLE) (hint: you'll need to use the `mle` function from the `stats4` package). Recall that in a linear regression, we assume that the residuals are normally distributed, so for MLE in this case we want a likelihood function that fits a normal distribution to the residuals:
+
+```{r eval=FALSE}
+#Note: you'll need to edit this slightly to make it work for your data
+LL <- function(beta0, beta1, mu, sigma) {
+    R = y - x * beta1 - beta0
+    #
+    R = suppressWarnings(dnorm(R, mu, sigma, log = TRUE))
+    #
+    -sum(R)
+}
+```
+
+```{r}
+#designate x and y value to edit LL function
+y <- sqrt(la.dat$price); x <- sqrt(la.dat$sqft)
+
+#LL function
+LL <- function(beta0, beta1, mu, sigma) {
+    R = y - x * beta1 - beta0
+    #
+    R = suppressWarnings(dnorm(R, mu, sigma, log = TRUE))
+    #
+    -sum(R)
+}
+
+#Attach stats4
+library(stats4)
+
+#MLE with beta0 and beta1 equal to 1
+la.mle <- mle(LL, start = list(beta0=1, beta1=1, sigma=1), fixed = list(mu=0), nobs = length(la.dat$price))
+```
+
+<p style="margin-left:40px">: According to the classical assumption of OLS, the error term has a zero population mean. Thus, I fixed $\mu$ as zero and designated $\beta_{0},\beta_{1}, \beta_{2}$ as 1. The result is as below.</p> 
+
+```{r}
+summary(la.mle)
+```
+
+
+(@) Try several different starting parameter values: How consistent are your results? Do your results typically match up with results from a simple linear regression? What do you think accounts for your results?
+
+```{r}
+#MLE with beta0=10, beta1=10
+la.mle2 <- mle(LL, start = list(beta0=10, beta1=10, sigma=1), fixed = list(mu=0), nobs = length(la.dat$price))
+
+summary(la.mle2)
+
+#MLE with beta0=100 and beta1=10
+la.mle3 <- mle(LL, start = list(beta0=100, beta1=10, sigma=1), fixed = list(mu=0), nobs = length(la.dat$price))
+
+summary(la.mle3)
+
+#MLE with beta0=200 and beta1=10
+la.mle4 <- mle(LL, start = list(beta0=200, beta1=10, sigma=1), fixed = list(mu=0), nobs = length(la.dat$price))
+
+summary(la.mle4)
+
+#compare with lm
+summary(lm(sqrt(price)~sqrt(sqft), la.dat))
+```
+
+<p style="margin-left:40px"> All results above are pretty similar. Among them, the most similar one to the result of regression is model <code>la.mle4</code>. Both predicted that one unit change in $\sqrt{sqft}$ will cause 37.9 increase in $\sqrt{price}$.</p>
+
+(@) Perform the same analysis with but with the addition of a variable for number of bathrooms (i.e., $price ~ size + bathrooms$).
+
+```{r}
+#designate x1, x2, and y value to edit LL function
+y <- sqrt(la.dat$price); x1 <- sqrt(la.dat$sqft); x2 <- la.dat$bath
+
+#LL function
+LL2 <- function(beta0, beta1, beta2, mu, sigma) {
+    R = y - 
+      x2*beta2 - x1*beta1 - beta0
+    #
+    R = suppressWarnings(dnorm(R, mu, sigma, log = TRUE))
+    #
+    -sum(R)
+}
+
+#MLE
+la.mle.b <- mle(LL2, start = list(beta0=100, beta1=10, beta2=10, sigma=1), fixed = list(mu=0), nobs = length(la.dat$price))
+
+summary(la.mle.b)
+
+#compare with lm
+summary(lm(sqrt(price)~sqrt(sqft)+bath, la.dat))
+```
+
+(@) In NO MORE than 4-6 sentences, explain how maximum likelihood estimation works in the context of this problem (i.e, how might you briefly describe your modeling approach within the context of a journal article methods section?)
+
+<p style="margin-left:40px">: The purpose of maximum likelihood estimation(MLE) is to find out certain value, such as $\theta$, which is supported best by observed data. In this model, we identified the unknown values of $\beta_{0}$, $\beta_{1}$, and $\beta_{2}$ that make the likelyhood function most possible based on the data we observed, with the premise that the error term is normally distributed with mean zero.</p>
+
+### Report your process
+
+You're encouraged to reflect on what was hard/easy, problems you solved, helpful tutorials you read, etc. Give credit to your sources, whether it's a blog post, a fellow student, an online tutorial, etc.
+
+**Interpretation of log-transformed variables in a regression model**
+http://www.ats.ucla.edu/stat/mult_pkg/faq/general/log_transformed_regression.htm
+
+**Regression diagnostics**
+http://www.statmethods.net/stats/rdiagnostics.html
+
+**Hypothesis test for regression slope**
+http://stattrek.com/regression/slope-test.aspx?Tutorial=AP
+
+**Stargazer Cheetsheet**
+http://jakeruss.com/cheatsheets/stargazer.html
+
+**variance-covariance matrix**
+http://support.minitab.com/en-us/minitab/17/topic-library/modeling-statistics/anova/anova-statistics/what-is-the-variance-covariance-matrix/
+
+**Getting started in linear regression using R**
+http://www.princeton.edu/~otorres/Regression101R.pdf
+
+
+### Rubric
+
+Minus: Didn't tackle at least 3 tasks. Or didn't make companion graphs. Didn't interpret anything but left it all to the "reader". Or more than one technical problem that is relatively easy to fix. It's hard to find the report in our repo.
+
+Check: Completed, but not fully accurate and/or readable. Requires a bit of detective work on my part to see what you did
+
+Check plus: Hits all the elements. No obvious mistakes. Pleasant to read. No heroic detective work required. Solid.
+
+
+
+#### The command below is helpful for debugging, please don't change it
+
+```{r echo=FALSE}
+sessionInfo()
+```
+
+
+
+
+
+
+
+
+
